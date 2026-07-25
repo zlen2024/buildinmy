@@ -140,3 +140,88 @@ Phase 1 was functionally complete with:
    - Drag-and-drop comparison reordering
    - Dark/light theme fully working (currently defaults dark)
    - i18n support (English/Bahasa Melayu toggle exists but is non-functional)
+
+---
+
+## Phase 3 — Welcome Overlay & Legend Fix (Task 3c)
+
+### WelcomeOverlay Component (`src/components/WelcomeOverlay.tsx`)
+- New `"use client"` component that shows on first visit only
+- Checks `localStorage` for `"nomadmy-welcomed"` key on mount; if absent, displays overlay
+- Full-viewport overlay with semi-transparent dark background (`#0a0a0f` at 95% opacity)
+- Centered glassmorphism card (`bg-[#0d1b2a]/80`, `backdrop-blur-2xl`)
+- Animated entrance via Framer Motion (`AnimatePresence`, fade-in + scale-up with spring easing)
+- Content:
+  - Gold `Sparkles` badge ("Nomad Workspace Finder")
+  - "Welcome to NomadMY" heading in `#e0c97f`
+  - Tagline: "Your interactive guide to work-friendly spaces across Malaysia"
+  - 3 feature highlight cards in a responsive grid (1-col mobile, 3-col desktop):
+    1. `Map` icon — "Interactive Malaysia Map" — "Click states to explore venues"
+    2. `Wifi` icon — "Verified Wi-Fi Speeds" — "Real speed test data from nomads"
+    3. `Coffee` icon — "Cost Index" — "Coffee prices, day passes & more"
+  - "Start Exploring" CTA button with gold `#e0c97f` background and `ChevronRight` icon
+  - Hint: "Press F to toggle this panel anytime"
+  - Close `X` button in top-right corner
+- Uses Lucide React icons: `Map`, `Wifi`, `Coffee`, `X`, `ChevronRight`, `Sparkles`
+- On dismiss (button click or X), sets `localStorage("nomadmy-welcomed", "true")`
+- Backdrop uses `pointer-events-none` so the map underneath is still scrollable/interactive
+- Card uses `pointer-events-auto` for full interactivity
+
+### Integration into `src/app/page.tsx`
+- Imported `WelcomeOverlay` and placed after `FloatingFilterBar`, before the venue drawer
+- Positioned with `z-50` so it renders above the map but is part of the main layout flow
+
+### MalaysiaMap Legend Fix (`src/components/MalaysiaMap.tsx`)
+- Increased padding from `p-3.5` to `p-4` for better breathing room
+- Added `min-w-[140px]` to legend container to prevent layout collapse
+- Added `flex-shrink-0` to emoji icon boxes so they don't compress
+- Added `whitespace-nowrap truncate` to category labels to prevent text overflow
+- Increased bottom section spacing from `pt-2.5` to `pt-3` and `mt-3` to `mt-3`
+- Added `whitespace-nowrap` to venue count text
+
+### Verification
+- ✅ Lint passes clean (0 errors, 0 warnings)
+
+---
+
+## Task 3f — Expanded Seed Data (15 New Venues, 5 New States)
+
+### Objective
+Add 15 more Malaysian venues to the seed file, covering states that previously had NO data: Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan, plus additional venues for existing states.
+
+### New Venues Added (15 total)
+
+| # | Name | Category | State | Area | Transit |
+|---|------|----------|-------|------|--------|
+| 1 | Kopi O Kangar | cafe | Perlis | Kangar | — |
+| 2 | The White House Coffee | cafe | Kedah | Alor Setar | KTM ETS |
+| 3 | Yellow Beach Cafe | cafe | Kedah | Langkawi | — |
+| 4 | Artisan Roast Kuantan | cafe | Pahang | Kuantan | KTM ETS |
+| 5 | Perpustakaan Negeri Pahang | public_space | Pahang | Kuantan | — |
+| 6 | Kopitiam Kita | cafe | Terengganu | Kuala Terengganu | — |
+| 7 | SpaceU Coworking KT | coworking | Terengganu | Kuala Terengganu | — |
+| 8 | N9 Coffee House | cafe | Negeri Sembilan | Seremban | KTM Komuter |
+| 9 | Perpustakaan Negeri Negeri Sembilan | public_space | Negeri Sembilan | Seremban | KTM Komuter |
+| 10 | Ferringhi Coffee Garden | cafe | Penang | Batu Ferringhi | — |
+| 11 | Muar Riverfront Cafe | cafe | Johor | Muar | KTM ETS |
+| 12 | The Good Space Mont Kiara | coworking | Kuala Lumpur | Mont Kiara | MRT Putrajaya Line |
+| 13 | Sim Sim Waterfront Cafe | cafe | Sabah | Sandakan | — |
+| 14 | Miri City Public Library | public_space | Sarawak | Miri | — |
+| 15 | Common Ground Shah Alam | coworking | Selangor | Shah Alam | LRT Shah Alam Line |
+
+### State Coverage
+- **Before**: 7 states (Kuala Lumpur, Selangor, Penang, Johor, Melaka, Sabah, Sarawak)
+- **After**: 12 states (+ Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan)
+- **Total venues**: 40 (up from 25)
+
+### Data Details
+- All venues include: workProfile, venueCost (MYR pricing), wifiMetrics (1-2 entries), realistic Google Place IDs
+- Transit links added where applicable (KTM ETS, KTM Komuter, MRT Putrajaya Line, LRT Shah Alam Line)
+- Ratings range 4.0-4.6, user ratings 78-1873
+- Coordinates are realistic WGS84 for each area
+- Wi-Fi speeds reflect regional differences (lower in East Malaysia/rural areas, higher in KL/Selangor)
+
+### Verification
+- Seed ran successfully: 40 locations across 12 states
+- No errors during seeding
+- All new states (Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan) populated

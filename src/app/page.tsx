@@ -9,6 +9,7 @@ import { VenueDrawer } from "@/components/VenueDrawer";
 import { VenueList } from "@/components/VenueList";
 import { StatsPanel } from "@/components/StatsPanel";
 import { FavoritesList } from "@/components/FavoritesList";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -155,6 +156,9 @@ export default function HomePage() {
 
       {/* Floating Filter Bar */}
       <FloatingFilterBar />
+
+      {/* Welcome Overlay (first visit only) */}
+      <WelcomeOverlay />
 
       {/* Venue Detail Drawer */}
       {selectedVenue && (

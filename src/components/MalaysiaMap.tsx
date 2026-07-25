@@ -139,22 +139,22 @@ export function MalaysiaMap() {
       </div>
 
       {/* Floating legend */}
-      <div className="absolute top-20 right-4 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-xl p-3.5 pointer-events-auto shadow-lg shadow-black/20">
-        <p className="text-[10px] text-[#e0c97f]/50 mb-2.5 font-semibold uppercase tracking-widest">Legend</p>
+      <div className="absolute top-20 right-4 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-xl p-4 pointer-events-auto shadow-lg shadow-black/20 min-w-[140px]">
+        <p className="text-[10px] text-[#e0c97f]/50 mb-3 font-semibold uppercase tracking-widest">Legend</p>
         <div className="space-y-2">
           {(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; emoji: string }][]).map(([key, cfg]) => (
-            <div key={key} className="flex items-center gap-2.5">
-              <div className="w-5 h-5 rounded flex items-center justify-center text-xs" style={{ backgroundColor: cfg.color + '20' }}>
+            <div key={key} className="flex items-center gap-2.5 min-w-0">
+              <div className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-xs" style={{ backgroundColor: cfg.color + '20' }}>
                 {cfg.emoji}
               </div>
-              <span className="text-[11px] text-[#e0c97f]/70">{cfg.label}</span>
+              <span className="text-[11px] text-[#e0c97f]/70 whitespace-nowrap truncate">{cfg.label}</span>
             </div>
           ))}
         </div>
 
         {/* Venue count in view */}
-        <div className="mt-3 pt-2.5 border-t border-[#e0c97f]/10">
-          <p className="text-[10px] text-[#e0c97f]/30">
+        <div className="mt-3 pt-3 border-t border-[#e0c97f]/10">
+          <p className="text-[10px] text-[#e0c97f]/30 whitespace-nowrap">
             {venueCount} venue{venueCount !== 1 ? "s" : ""} in view
           </p>
         </div>
