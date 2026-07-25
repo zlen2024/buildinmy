@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── NomadMY Database Schema ─────────────────────────────────────────────────
+
+model Location {
+  id              String   @id @default(cuid())
+  googlePlaceId   String   @unique // Strict Google Maps Verification Binding
+  name            String
+  formattedAddress String
+  category        String   @default("cafe") // cafe, coworking, public_space, coliving
+  state           String   // e.g., 'Kuala Lumpur', 'Penang', 'Sabah'
+  area            String   // e.g., 'Mont Kiara', 'Georgetown'
+  latitude        Float    // WGS 84 latitude
+  longitude       Float   // WGS 84 longitude
+  googleRating    Float?
+  googleUserRatingsTotal Int @default(0)
+  googleMapsUrl   String?
+  photoReference  String?
+  isOperational   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  workProfile  WorkProfile?
+  wifiMetrics  WifiMetric[]
+  venueCost    VenueCost?
+  transitLinks TransitAccess[]
+}
+
+model WorkProfile {
+  id           String   @id @default(cuid())
+  locationId   String   @unique
+  powerOutlets String   @default("moderate") // high, moderate, sparse, none
+  noiseLevel   String   @default("quiet") // silent, quiet, moderate, loud
+  seatingType  String   @default("standard") // ergonomic, standard, casual_sofa, hard_chairs
+  laptopPolicy String @default("friendly_unlimited") // friendly_unlimited, time_limited, no_laptops, peak_hours_restricted
+  hasAirCon    Boolean  @default(true)
+  callFriendly Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+}
+
+model WifiMetric {
+  id            String   @id @default(cuid())
+  locationId    String
+  downloadMbps  Int
+  uploadMbps    Int
+  pingMs        Int?
+  createdAt     DateTime @default(now())
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+}
+
+model VenueCost {
+  id            String   @id @default(cuid())
+  locationId    String   @unique
+  coffeePriceMyr    Float
+  dayPassMyr        Float?
+  minSpendMyr       Float  @default(0)
+  updatedAt        DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+}
+
+model TransitAccess {
+  id                  String   @id @default(cuid())
+  locationId          String
+  nearestStationName  String
+  stationLine         String   // e.g., 'MRT Kajang Line', 'LRT Kelana Jaya'
+  walkTimeMins        Int
+  distanceMeters      Int
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+}
