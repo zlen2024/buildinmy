@@ -15,6 +15,7 @@ import { TopVenuesRanking } from "@/components/TopVenuesRanking";
 import { CompareFloatingBar } from "@/components/CompareFloatingBar";
 import { AIChatAssistant } from "@/components/AIChatAssistant";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import { VenueCompareModal } from "@/components/VenueCompareModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
@@ -208,6 +209,9 @@ function HomePage() {
 
       {/* Network Status Indicator */}
       <NetworkStatus />
+
+      {/* Venue Compare Modal */}
+      <VenueCompareModal />
 
       {/* Keyboard Shortcuts Overlay */}
       <KeyboardShortcuts />

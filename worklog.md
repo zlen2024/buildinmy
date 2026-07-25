@@ -1276,3 +1276,107 @@ Task: Phase 8 — Styling Improvements, Bug Fixes, and New Features
    - Offline PWA support
    - Drill-down to district level in krackedmaps
    - Venue comparison modal (currently only floating bar)
+---
+Task ID: 5
+Agent: full-stack-developer (VenueCompareModal)
+Task: Create Venue Comparison Modal component
+
+Work Log:
+- Added showCompareModal boolean state and setShowCompareModal action to map-store.ts
+- Updated clearCompare to also close the modal when clearing
+- Created src/components/VenueCompareModal.tsx with full side-by-side comparison UI
+  - Full-screen modal overlay (z-60) with dark navy backdrop and gold accents
+  - Framer Motion enter/exit animations (scale + fade)
+  - Header with title, subtitle, Clear All button, and close button
+  - Desktop: responsive CSS grid (2-3 columns) with table-like metric rows
+  - Mobile: horizontal scrollable cards with snap scrolling
+  - 10 metric rows: Wi-Fi speed, rating, power outlets, noise level, seating, air con, call friendly, coffee price, day pass, transit info
+  - Best-value highlighting: gold accent glow/border on best values per metric
+  - Color-coded Wi-Fi speed bars (green/amber/red) with animated width
+  - Star ratings with half-star support
+  - Noise level and power outlet color coding
+  - View Details button opens venue drawer
+  - Remove button to remove individual venues from comparison
+  - Add venue button (when < 3 items) opens search sidebar
+  - Properly keyed React Fragments for metric row grid rendering
+- Updated CompareFloatingBar.tsx: Compare Now button now calls setShowCompareModal(true)
+- Added VenueCompareModal import and component to page.tsx
+- Added .compare-best-row and .compare-best-cell CSS to globals.css
+
+Stage Summary:
+- Full side-by-side venue comparison modal with best-value highlighting
+- Responsive design (desktop columns, mobile scroll)
+- Framer Motion animations
+- ESLint passes cleanly
+- Dev server compiles successfully
+
+---
+Task ID: 6
+Agent: main-agent
+Task: Cron review round — bug fixes, styling improvements, new features, QA
+
+Work Log:
+- Read worklog.md and assessed current project status
+- Performed QA via agent-browser: page loads with 48 venues, all interactive elements functional
+- Found critical bug: `checkIfOpen()` in VenueList.tsx referenced `venue.workProfile?.hours` but WorkProfile type has no `hours` field → dead code, Open/Closed badges never showed
+- Fixed bug: Added `operatingHours` field to Prisma schema (WorkProfile model), updated LocationPin type, updated API to return field, rewrote `checkIfOpen()` with proper hours parsing (simple "8:00-22:00" and complex "9:00-18:00 Mon-Fri" formats)
+- Added operating hours display to VenueDrawer (new section with Clock icon, shows hours string + Open Now/Closed badge in header)
+- Created Venue Comparison Modal (VenueCompareModal.tsx) via subagent — full side-by-side comparison with best-value highlighting, responsive design, 10 metric rows
+- Added Wi-Fi Speed Heatmap toggle to MalaysiaMap — toggle button in legend, heatmap overlay panel showing avg Wi-Fi by state with color-coded bars
+- Added `showCompareModal` and `showWifiHeatmap` states to Zustand store
+- Verified CSS already comprehensive: custom scrollbars, glass morphism, animated borders, shimmer effects, venue card hover, vignette, pulse/glow, search glow, progress bar, Wi-Fi bar gradient, legend hover, state badge glow — all present
+- QA passed: no runtime errors, no console errors, all features working
+- ESLint passes cleanly
+
+Stage Summary:
+- Bug fix: operating hours feature fully functional (DB schema + API + type + UI)
+- New feature: Venue Comparison Modal (side-by-side, best-value highlighting)
+- New feature: Wi-Fi Speed Heatmap toggle on map
+- New feature: Operating hours display in VenueDrawer with Open/Closed badge
+- Styling verified: 15+ CSS utility classes already present and working
+- QA: All tests pass, zero runtime errors
+
+---
+## Current Project Status Assessment
+
+### Overall Health: ✅ STABLE — Production-ready core with rich feature set
+
+### Completed Features (8 phases):
+1. Core map with krackedmaps (interactive SVG map, pin management, state selection)
+2. Venue data pipeline (Prisma + SQLite, 48 venues across 12 states, 5 models)
+3. Sidebar navigation with state heatmap, category filters, nav sections
+4. Floating filter bar with search autocomplete, recent search history, Wi-Fi slider, productivity toggles
+5. Venue drawer with Wi-Fi speed bar, work profile metrics, cost index, transit links, drag-to-dismiss
+6. i18n system (English/Bahasa Melayu), CSV export, favorites, compare, leaderboard, ranking, AI chat, keyboard shortcuts, network status, welcome overlay, weather widget
+7. Venue Comparison Modal (side-by-side comparison, best-value highlighting)
+8. Wi-Fi Speed Heatmap toggle, operating hours display with Open/Closed status
+
+### Architecture:
+- Next.js 16 App Router + TypeScript 5
+- Tailwind CSS 4 + shadcn/ui (46 components) + Framer Motion
+- Zustand for client state (persisted: favorites, locale)
+- Prisma + SQLite for data
+- krackedmaps for GIS rendering
+
+### Current Components (30+):
+- MalaysiaMap, SidebarNav, TopHeader, FloatingFilterBar, VenueDrawer, VenueList
+- VenueCompareModal, CompareFloatingBar, FavoritesList, WifiLeaderboard, TopVenuesRanking
+- StatsPanel, StateHeatmap, WeatherWidget, QuickStatsOverlay, MapPinTooltip
+- StarfieldBackground, NearbyVenues, AIChatAssistant, WelcomeOverlay
+- KeyboardShortcuts, NetworkStatus, AnimatedCounter, CostExplorer
+
+### Unresolved Issues / Risks:
+1. **East Malaysia (Sabah/Sarawak)**: krackedmaps focuses on Peninsular Malaysia — pins for East Malaysian venues may not render correctly on the map (known limitation of krackedmaps)
+2. **krackedmaps API stability**: No official documentation discovered; API was reverse-engineered from TypeScript definitions
+3. **Welcome overlay persistence**: Currently shows on every page load (no localStorage flag to dismiss permanently)
+4. **Photo references**: Google photoReference field is stored but images are not rendered (placeholder gradients used in VenueDrawer instead)
+5. **API route `/api/route.ts`**: Exists but purpose unclear — may be a leftover from scaffolding
+
+### Priority Recommendations for Next Phase:
+1. **P1**: Add venue image search/generation for VenueDrawer hero banners (replace placeholder gradients)
+2. **P1**: Implement persistent welcome overlay dismissal (localStorage)
+3. **P2**: Add "Add Review" or "Report Issue" feature for crowd-sourced data
+4. **P2**: Implement map cluster markers for zoomed-out views (when many pins overlap)
+5. **P3**: Add map dark/light theme switch synchronized with overall theme
+6. **P3**: Real-time collaboration feature (WebSocket) for shared workspace discovery
+7. **P3**: Performance optimization — lazy load components outside viewport, memoize expensive computations

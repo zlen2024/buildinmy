@@ -190,6 +190,22 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 >
                   {categoryConfig.label}
                 </Badge>
+                {venue.workProfile?.operatingHours && (
+                  <span className={cn(
+                    "flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full",
+                    isVenueOpen(venue.workProfile.operatingHours)
+                      ? "text-[#22c55e] bg-[#22c55e]/10 border border-[#22c55e]/15"
+                      : "text-[#ef4444]/70 bg-[#ef4444]/8 border border-[#ef4444]/10"
+                  )}>
+                    <span className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      isVenueOpen(venue.workProfile.operatingHours)
+                        ? "bg-[#22c55e] pulse-soft"
+                        : "bg-[#ef4444]/50"
+                    )} />
+                    {isVenueOpen(venue.workProfile.operatingHours) ? "Open Now" : "Closed"}
+                  </span>
+                )}
                 {venue.googleRating && (
                   <div className="flex items-center gap-1">
                     <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -268,6 +284,20 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
             onScroll={handleScroll}
             className="px-5 pb-6 overflow-y-auto max-h-[55vh] space-y-5"
           >
+            {/* Section Divider */}
+            <SectionDivider />
+
+            {/* Operating Hours */}
+            {venue.workProfile?.operatingHours && (
+              <div className="bg-[#e0c97f]/5 rounded-xl p-4 border border-[#e0c97f]/8">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-[#e0c97f]/50" />
+                  <span className="text-xs font-medium text-[#e0c97f]/70">Operating Hours</span>
+                </div>
+                <p className="text-sm font-medium text-[#e0c97f] tabular-nums">{venue.workProfile.operatingHours}</p>
+              </div>
+            )}
+
             {/* Section Divider */}
             <SectionDivider />
 
@@ -477,4 +507,20 @@ function SectionDivider() {
       <div className="flex-1 h-px animated-gradient-divider" />
     </div>
   );
+}
+
+/** Open/closed checker based on hours string */
+function isVenueOpen(hours: string): boolean {
+  const now = new Date();
+  const hour = now.getHours();
+  const minutes = now.getMinutes();
+  const currentMinutes = hour * 60 + minutes;
+
+  const simpleMatch = hours.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+  if (simpleMatch) {
+    const openMin = parseInt(simpleMatch[1]) * 60 + parseInt(simpleMatch[2]);
+    const closeMin = parseInt(simpleMatch[3]) * 60 + parseInt(simpleMatch[4]);
+    return currentMinutes >= openMin && currentMinutes < closeMin;
+  }
+  return true;
 }

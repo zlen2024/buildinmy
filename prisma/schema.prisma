@@ -43,6 +43,7 @@ model WorkProfile {
   laptopPolicy String @default("friendly_unlimited") // friendly_unlimited, time_limited, no_laptops, peak_hours_restricted
   hasAirCon    Boolean  @default(true)
   callFriendly Boolean  @default(true)
+  operatingHours String @default("8:00-22:00") // e.g., '8:00-22:00', '9:00-18:00 Mon-Fri 10:00-20:00 Sat-Sun'
   updatedAt    DateTime @updatedAt
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)

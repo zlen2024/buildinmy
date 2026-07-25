@@ -126,8 +126,8 @@ interface VenueCardProps {
 function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: VenueCardProps) {
   const categoryConfig = CATEGORY_CONFIG[venue.category as VenueCategory];
 
-  // Simulated open/closed based on hours if available
-  const isOpen = venue.workProfile?.hours ? checkIfOpen(venue.workProfile.hours) : null;
+  // Open/closed based on operating hours
+  const isOpen = venue.workProfile?.operatingHours ? checkIfOpen(venue.workProfile.operatingHours) : null;
 
   return (
     <motion.button
@@ -240,10 +240,41 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
   );
 }
 
-/** Simple open/closed checker based on hours string */
-function checkIfOpen(_hours: string): boolean {
-  // If hours data exists, we simulate: assume open during business hours (8am-10pm)
+/** Open/closed checker based on hours string like "8:00-22:00" or "9:00-18:00 Mon-Fri 10:00-20:00 Sat-Sun" */
+function checkIfOpen(hours: string): boolean {
   const now = new Date();
   const hour = now.getHours();
-  return hour >= 8 && hour < 22;
+  const minutes = now.getMinutes();
+  const currentMinutes = hour * 60 + minutes;
+  const day = now.getDay(); // 0=Sun, 6=Sat
+
+  // Parse simple format: "8:00-22:00"
+  const simpleMatch = hours.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+  if (simpleMatch) {
+    const openMin = parseInt(simpleMatch[1]) * 60 + parseInt(simpleMatch[2]);
+    const closeMin = parseInt(simpleMatch[3]) * 60 + parseInt(simpleMatch[4]);
+    return currentMinutes >= openMin && currentMinutes < closeMin;
+  }
+
+  // Parse weekday/weekend format: "9:00-18:00 Mon-Fri 10:00-20:00 Sat-Sun"
+  const parts = hours.split(/\s+/);
+  if (parts.length >= 3) {
+    const rangeMatch = parts[0].match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (rangeMatch) {
+      const openMin = parseInt(rangeMatch[1]) * 60 + parseInt(rangeMatch[2]);
+      const closeMin = parseInt(rangeMatch[3]) * 60 + parseInt(rangeMatch[4]);
+      const daysPart = parts.slice(1).join(' ').toLowerCase();
+      const isWeekday = day >= 1 && day <= 5;
+      const isWeekend = day === 0 || day === 6;
+      if ((daysPart.includes('mon-fri') || daysPart.includes('weekday')) && isWeekday) {
+        return currentMinutes >= openMin && currentMinutes < closeMin;
+      }
+      if ((daysPart.includes('sat-sun') || daysPart.includes('weekend')) && isWeekend) {
+        return currentMinutes >= openMin && currentMinutes < closeMin;
+      }
+    }
+  }
+
+  // Fallback: assume open
+  return true;
 }

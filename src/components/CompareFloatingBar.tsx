@@ -7,8 +7,7 @@ import { X, GitCompareArrows } from "lucide-react";
 export function CompareFloatingBar() {
   const compareIds = useMapStore((s) => s.compareIds);
   const locations = useMapStore((s) => s.locations);
-  const setActiveNavSection = useMapStore((s) => s.setActiveNavSection);
-  const setSidebarOpen = useMapStore((s) => s.setSidebarOpen);
+  const setShowCompareModal = useMapStore((s) => s.setShowCompareModal);
   const clearCompare = useMapStore((s) => s.clearCompare);
 
   if (compareIds.length === 0) return null;
@@ -18,8 +17,9 @@ export function CompareFloatingBar() {
     .filter(Boolean);
 
   const handleCompareNow = () => {
-    setActiveNavSection("favorites");
-    setSidebarOpen(true);
+    if (compareIds.length >= 2) {
+      setShowCompareModal(true);
+    }
   };
 
   return (
@@ -33,17 +33,12 @@ export function CompareFloatingBar() {
       >
         <div className="max-w-4xl mx-auto px-3 sm:px-4">
           <div className="pointer-events-auto glass-card flex items-center gap-3 px-4 py-2.5 shadow-2xl shadow-black/40">
-            {/* Label - hidden on mobile */}
             <span className="hidden sm:inline text-[11px] font-medium text-[#e0c97f]/50 whitespace-nowrap">
               Comparing {compareIds.length} venue{compareIds.length > 1 ? "s" : ""}
             </span>
-
-            {/* Compact label on mobile */}
             <span className="sm:hidden text-[11px] font-medium text-[#e0c97f]/50">
               {compareIds.length}
             </span>
-
-            {/* Venue avatar badges */}
             <div className="hidden sm:flex items-center gap-1.5">
               {comparedVenues.map((venue) => {
                 if (!venue) return null;
@@ -60,11 +55,7 @@ export function CompareFloatingBar() {
                 );
               })}
             </div>
-
-            {/* Spacer */}
             <div className="flex-1" />
-
-            {/* Compare Now button */}
             <button
               onClick={handleCompareNow}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e0c97f]/12 border border-[#e0c97f]/20 text-[#e0c97f] text-[11px] font-medium hover:bg-[#e0c97f]/20 transition-all"
@@ -73,8 +64,6 @@ export function CompareFloatingBar() {
               <span className="hidden sm:inline">Compare Now</span>
               <span className="sm:hidden">Compare</span>
             </button>
-
-            {/* Clear button */}
             <button
               onClick={clearCompare}
               className="p-1.5 rounded-lg text-[#e0c97f]/30 hover:text-[#e94560] hover:bg-[#e94560]/10 transition-all"

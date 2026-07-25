@@ -35,6 +35,7 @@ export interface LocationPin {
     laptopPolicy: string
     hasAirCon: boolean
     callFriendly: boolean
+    operatingHours: string
   } | null
   venueCost?: {
     coffeePriceMyr: number
@@ -73,8 +74,12 @@ interface MapState {
   favoriteIds: string[]
   // Comparison list
   compareIds: string[]
+  // Compare modal visibility
+  showCompareModal: boolean
   // Locale for i18n
   locale: Locale
+  // Wi-Fi heatmap mode
+  showWifiHeatmap: boolean
 
   // Actions
   setSelectedState: (state: string | null) => void
@@ -97,8 +102,12 @@ interface MapState {
   toggleCompare: (id: string) => void
   isCompared: (id: string) => boolean
   clearCompare: () => void
+  setShowCompareModal: (show: boolean) => void
   // Locale action
   setLocale: (locale: Locale) => void
+  // Wi-Fi heatmap toggle
+  setShowWifiHeatmap: (show: boolean) => void
+  toggleWifiHeatmap: () => void
 }
 
 const defaultFilters = {
@@ -128,7 +137,9 @@ export const useMapStore = create<MapState>()(
       activeNavSection: 'map',
       favoriteIds: [],
       compareIds: [],
+      showCompareModal: false,
       locale: 'en' as Locale,
+      showWifiHeatmap: false,
 
       setSelectedState: (state) => set({ selectedState: state }),
       setSelectedDistrict: (district) => set({ selectedDistrict: district }),
@@ -168,8 +179,11 @@ export const useMapStore = create<MapState>()(
           return { compareIds: [...state.compareIds, id] }
         }),
       isCompared: (id) => get().compareIds.includes(id),
-      clearCompare: () => set({ compareIds: [] }),
+      clearCompare: () => set({ compareIds: [], showCompareModal: false }),
+      setShowCompareModal: (show) => set({ showCompareModal: show }),
       setLocale: (locale) => set({ locale }),
+      setShowWifiHeatmap: (show) => set({ showWifiHeatmap: show }),
+      toggleWifiHeatmap: () => set((state) => ({ showWifiHeatmap: !state.showWifiHeatmap })),
     }),
     {
       name: 'nomadmy-storage',

@@ -54,6 +54,7 @@ export async function GET(request: Request) {
               laptopPolicy: loc.workProfile.laptopPolicy,
               hasAirCon: loc.workProfile.hasAirCon,
               callFriendly: loc.workProfile.callFriendly,
+              operatingHours: loc.workProfile.operatingHours,
             }
           : null,
         venueCost: loc.venueCost

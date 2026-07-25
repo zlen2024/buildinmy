@@ -10,6 +10,8 @@ import { MapPinTooltip } from "@/components/MapPinTooltip";
 import { QuickStatsOverlay } from "@/components/QuickStatsOverlay";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { StarfieldBackground } from "@/components/StarfieldBackground";
+import { Wifi, Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StateSelectPayload {
   state?: string;
@@ -32,6 +34,8 @@ export function MalaysiaMap() {
   const setSelectedState = useMapStore((s) => s.setSelectedState);
   const setSelectedVenue = useMapStore((s) => s.setSelectedVenue);
   const sidebarOpen = useMapStore((s) => s.sidebarOpen);
+  const showWifiHeatmap = useMapStore((s) => s.showWifiHeatmap);
+  const toggleWifiHeatmap = useMapStore((s) => s.toggleWifiHeatmap);
 
   const [mapReady, setMapReady] = useState(false);
   const [hoveredVenue, setHoveredVenue] = useState<LocationPin | null>(null);
@@ -218,6 +222,22 @@ export function MalaysiaMap() {
   // Venue count for selected state
   const venueCount = visibleLocations.length;
 
+  // Wi-Fi speed by state for heatmap
+  const wifiSpeedByState = useMemo(() => {
+    const stateMap = new Map<string, { total: number; count: number }>();
+    for (const loc of locations) {
+      const existing = stateMap.get(loc.state) || { total: 0, count: 0 };
+      stateMap.set(loc.state, { total: existing.total + loc.avgDownloadMbps, count: existing.count + 1 });
+    }
+    return Array.from(stateMap.entries())
+      .map(([state, { total, count }]) => ({
+        state,
+        avgSpeed: Math.round(total / count),
+        count,
+      }))
+      .sort((a, b) => b.avgSpeed - a.avgSpeed);
+  }, [locations]);
+
   return (
     <div className="relative w-full h-full min-h-screen bg-[#0a0a0f] overflow-hidden">
       <StarfieldBackground />
@@ -284,7 +304,75 @@ export function MalaysiaMap() {
             venue{venueCount !== 1 ? "s" : ""} in view
           </p>
         </div>
+
+        {/* Wi-Fi Heatmap Toggle */}
+        <div className="mt-3 pt-3 border-t border-[#e0c97f]/10">
+          <button
+            onClick={toggleWifiHeatmap}
+            className={cn(
+              "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all duration-300 border",
+              showWifiHeatmap
+                ? "bg-[#22c55e]/12 border-[#22c55e]/30 text-[#22c55e]"
+                : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/35 hover:text-[#e0c97f]/60 hover:border-[#e0c97f]/15"
+            )}
+          >
+            {showWifiHeatmap ? (
+              <Wifi className="w-3.5 h-3.5" />
+            ) : (
+              <Activity className="w-3.5 h-3.5" />
+            )}
+            {showWifiHeatmap ? "Heatmap On" : "Wi-Fi Heatmap"}
+          </button>
+        </div>
       </div>
+
+      {/* Wi-Fi Speed Heatmap Overlay */}
+      <AnimatePresence>
+        {showWifiHeatmap && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="absolute bottom-52 right-4 glass-card p-4 pointer-events-auto min-w-[200px] max-w-[240px]"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Wifi className="w-4 h-4 text-[#22c55e]" />
+              <p className="text-[11px] text-[#e0c97f]/60 font-semibold">Avg Wi-Fi by State</p>
+            </div>
+            <div className="space-y-1.5">
+              {wifiSpeedByState.map(({ state, avgSpeed, count }) => (
+                <div key={state} className="flex items-center gap-2">
+                  <span className="text-[10px] text-[#e0c97f]/50 w-12 truncate">{state.replace('Kuala Lumpur', 'KL')}</span>
+                  <div className="flex-1 h-2 rounded-full bg-[#e0c97f]/8 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (avgSpeed / 300) * 100)}%`,
+                        background: avgSpeed > 100
+                          ? 'linear-gradient(90deg, #22c55e, #4ade80)'
+                          : avgSpeed > 50
+                            ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                            : 'linear-gradient(90deg, #ef4444, #f87171)',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-mono text-[#e0c97f]/60 w-16 text-right">{avgSpeed} <span className="text-[#e0c97f]/30">Mbps</span></span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 pt-2 border-t border-[#e0c97f]/8 flex items-center justify-between">
+              <span className="text-[8px] text-[#e0c97f]/20">Slower</span>
+              <div className="flex gap-px">
+                <div className="w-3 h-1.5 rounded-sm bg-[#ef4444]/60" />
+                <div className="w-3 h-1.5 rounded-sm bg-[#f59e0b]/60" />
+                <div className="w-3 h-1.5 rounded-sm bg-[#22c55e]/60" />
+              </div>
+              <span className="text-[8px] text-[#e0c97f]/20">Faster</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* State name overlay — animated with gold glow */}
       <AnimatePresence>
