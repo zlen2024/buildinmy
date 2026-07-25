@@ -50,14 +50,16 @@ export function TopHeader() {
 
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-16 z-30 pointer-events-none">
-      <div className="flex items-center justify-between px-4 lg:px-6 py-3">
+      {/* Subtle gradient bottom line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/20 to-transparent" />
+      <div className="flex items-center justify-between px-4 lg:px-6 py-3.5">
         {/* Left spacer (for sidebar on mobile) */}
         <div className="w-10 lg:w-0" />
 
         {/* Center - Status badges */}
         <div className="flex items-center gap-2 pointer-events-auto">
           {selectedState ? (
-            <div className="flex items-center gap-2 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-full px-4 py-1.5">
+            <div className="flex items-center gap-2 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-full px-4 py-1.5 shadow-lg shadow-black/20">
               <span className="w-2 h-2 rounded-full bg-[#e0c97f] animate-pulse" />
               <span className="text-xs font-medium text-[#e0c97f]">
                 {selectedState.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -67,13 +69,17 @@ export function TopHeader() {
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-full px-4 py-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+            <div className="flex items-center gap-2 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-full px-4 py-1.5 shadow-lg shadow-black/20">
+              {/* Live green pulse indicator */}
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22c55e] opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22c55e]" />
+              </span>
               <span className="text-xs font-medium text-[#e0c97f]">
                 {t('header.malaysia', locale)}
               </span>
               <span className="text-[10px] text-[#e0c97f]/40">
-                {activeVenueCount} {t('header.venues', locale)}
+                {activeVenueCount} {t('header.venues', locale)} live
               </span>
             </div>
           )}
@@ -84,7 +90,7 @@ export function TopHeader() {
           {/* Theme toggle */}
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2 rounded-lg bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-colors"
+            className="p-2 rounded-lg bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-colors shadow-lg shadow-black/20"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -93,10 +99,10 @@ export function TopHeader() {
           <div className="relative">
             <button
               onClick={() => setShowLang(!showLang)}
-              className="flex items-center gap-1.5 p-2 rounded-lg bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-colors"
+              className="flex items-center gap-1.5 p-2 rounded-lg bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-all duration-300 shadow-lg shadow-black/20"
             >
               <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline text-[10px] font-medium uppercase tracking-wider">
+              <span className="hidden sm:inline text-[10px] font-medium uppercase tracking-wider transition-all duration-300">
                 {locale === 'en' ? 'EN' : 'BM'}
               </span>
             </button>
@@ -108,7 +114,7 @@ export function TopHeader() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -4, scale: 0.96 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute right-0 top-full mt-2 bg-[#0d1b2a]/95 backdrop-blur-xl border border-[#e0c97f]/20 rounded-xl overflow-hidden shadow-xl shadow-black/30 min-w-[160px] z-50"
+                  className="absolute right-0 top-full mt-2 bg-[#0d1b2a]/95 backdrop-blur-xl border border-[#e0c97f]/20 rounded-xl overflow-hidden shadow-xl shadow-black/30 min-w-[180px] z-50"
                 >
                   <div className="p-1.5">
                     {LANG_OPTIONS.map((lang) => {
@@ -117,14 +123,14 @@ export function TopHeader() {
                         <button
                           key={lang.code}
                           onClick={() => handleLangSelect(lang.code)}
-                          className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
+                          className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-all duration-200 ${
                             isActive
                               ? "bg-[#e0c97f]/12 text-[#e0c97f]"
                               : "text-[#e0c97f]/50 hover:bg-[#e0c97f]/8 hover:text-[#e0c97f]/80"
                           }`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-200 ${
                               isActive ? "bg-[#e0c97f]" : "bg-[#e0c97f]/20"
                             }`}
                           />

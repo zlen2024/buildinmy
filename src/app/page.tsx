@@ -13,6 +13,7 @@ import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { WifiLeaderboard } from "@/components/WifiLeaderboard";
 import { TopVenuesRanking } from "@/components/TopVenuesRanking";
 import { CompareFloatingBar } from "@/components/CompareFloatingBar";
+import { AIChatAssistant } from "@/components/AIChatAssistant";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -179,6 +180,9 @@ function HomePage() {
 
       {/* Floating Filter Bar */}
       <FloatingFilterBar />
+
+      {/* AI Chat Assistant */}
+      <AIChatAssistant />
 
       {/* Welcome Overlay (first visit only) */}
       <WelcomeOverlay />

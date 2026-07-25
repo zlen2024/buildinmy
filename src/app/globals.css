@@ -460,3 +460,124 @@
   background-size: 200% auto;
   animation: shimmer 3s ease-in-out infinite;
 }
+
+/* ============================================================
+   Task 3a — Additional Utility Classes
+   ============================================================ */
+
+/* Subtle breathe animation for living feel */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Slide in from right for panel entrance */
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-right {
+  animation: slideInFromRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Count up reveal for numbers */
+@keyframes countUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-up {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+/* Styled glass input */
+.glass-input {
+  background: rgba(13, 27, 42, 0.8);
+  border: 1px solid rgba(224, 201, 127, 0.15);
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: #e0c97f;
+  transition: all 0.2s ease;
+}
+
+.glass-input::placeholder {
+  color: rgba(224, 201, 127, 0.3);
+}
+
+.glass-input:focus {
+  border-color: rgba(224, 201, 127, 0.4);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(224, 201, 127, 0.08);
+}
+
+/* Base stat card */
+.stat-card {
+  background: rgba(13, 27, 42, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(224, 201, 127, 0.08);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(224, 201, 127, 0.15);
+}
+
+/* Base venue card */
+.venue-card {
+  background: rgba(13, 27, 42, 0.5);
+  border: 1px solid rgba(224, 201, 127, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.venue-card:hover {
+  background: rgba(13, 27, 42, 0.7);
+  border-color: rgba(224, 201, 127, 0.15);
+  box-shadow: 0 10px 15px -3px rgba(224, 201, 127, 0.05);
+}
+
+/* Gold divider with decorative dots */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(224, 201, 127, 0.15), transparent);
+}
+
+.gold-divider::before,
+.gold-divider::after {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(224, 201, 127, 0.25);
+  flex-shrink: 0;
+}

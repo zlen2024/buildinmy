@@ -39,7 +39,6 @@ export function FloatingFilterBar() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Search suggestions - memoized
   const suggestions = useMemo(() => {
     if (searchQuery.length === 0) return [];
     const q = searchQuery.toLowerCase();
@@ -53,7 +52,6 @@ export function FloatingFilterBar() {
       .slice(0, 6);
   }, [searchQuery, locations]);
 
-  // Keyboard navigation handler for search input
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || suggestions.length === 0) return;
     switch (e.key) {
@@ -77,7 +75,6 @@ export function FloatingFilterBar() {
     }
   };
 
-  // Close suggestions on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -96,7 +93,6 @@ export function FloatingFilterBar() {
     callFriendly ||
     selectedState !== null;
 
-  // Count of active filters for badge
   const activeFilterCount = [
     activeCategories.length > 0 ? activeCategories.length : 0,
     minWifiSpeed > 0 ? 1 : 0,
@@ -106,7 +102,6 @@ export function FloatingFilterBar() {
     selectedState !== null ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
-  // Live filtered count from the actual filter selector
   const filteredLocations = useFilteredLocations();
   const filteredCount = filteredLocations.length;
 
@@ -118,9 +113,9 @@ export function FloatingFilterBar() {
       className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
     >
       <div className="max-w-5xl mx-auto p-3 sm:p-4">
-        <div className="pointer-events-auto glass-strong rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative">
-          {/* Gradient top border accent */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/40 to-transparent" />
+        <div className="pointer-events-auto glass-strong rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative transition-all duration-300">
+          {/* Gradient top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#e0c97f] via-[#e94560] to-[#e0c97f]/30" />
           {/* Search row */}
           <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3">
             <div ref={searchRef} className="relative flex-1">
@@ -136,7 +131,7 @@ export function FloatingFilterBar() {
                 }}
                 onKeyDown={handleSearchKeyDown}
                 onFocus={() => setShowSuggestions(true)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#e0c97f]/5 border border-[#e0c97f]/10 rounded-xl text-sm text-[#e0c97f] placeholder:text-[#e0c97f]/25 focus:outline-none focus:border-[#e0c97f]/25 focus:bg-[#e0c97f]/8 focus:shadow-[0_0_0_3px_rgba(224,201,127,0.08)] transition-all"
+                className="glass-input w-full pl-10 pr-4"
               />
               {searchQuery && (
                 <button
@@ -154,7 +149,7 @@ export function FloatingFilterBar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#0d1b2a] border border-[#e0c97f]/15 rounded-xl overflow-hidden shadow-xl shadow-black/40"
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#0d1b2a] border border-[#e0c97f]/15 rounded-xl overflow-hidden shadow-xl shadow-black/40 max-h-64 overflow-y-auto"
                   >
                     {suggestions.map((loc, i) => (
                       <button
@@ -179,6 +174,8 @@ export function FloatingFilterBar() {
                         <span className="text-[10px] text-[#e0c97f]/30">{loc.avgDownloadMbps} Mbps</span>
                       </button>
                     ))}
+                    {/* Scroll indicator */}
+                    <div className="h-1 bg-gradient-to-t from-[#e0c97f]/10 to-transparent" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -188,7 +185,7 @@ export function FloatingFilterBar() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "p-2.5 rounded-xl border transition-all flex-shrink-0",
+                "relative p-2.5 rounded-xl border transition-all duration-300 flex-shrink-0",
                 hasActiveFilters
                   ? "bg-[#e0c97f]/15 border-[#e0c97f]/25 text-[#e0c97f] pulse-gold"
                   : "bg-[#e0c97f]/5 border-[#e0c97f]/8 text-[#e0c97f]/40 hover:text-[#e0c97f]/70"
@@ -196,7 +193,7 @@ export function FloatingFilterBar() {
             >
               <SlidersHorizontal className="w-4 h-4" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-[#e94560] text-[9px] font-bold text-white flex items-center justify-center px-1">
+                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-[#e94560] text-[9px] font-bold text-white flex items-center justify-center px-1 transition-all duration-300">
                   {activeFilterCount}
                 </span>
               )}
@@ -217,9 +214,9 @@ export function FloatingFilterBar() {
                   key={key}
                   onClick={() => toggleCategory(key)}
                   className={cn(
-                    "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] font-medium transition-all border",
+                    "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-300 border",
                     activeCategories.includes(key)
-                      ? "bg-[#e0c97f]/12 border-[#e0c97f]/25 text-[#e0c97f]"
+                      ? "bg-[#e0c97f]/15 border-[#e0c97f]/30 text-[#e0c97f]"
                       : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/35 hover:border-[#e0c97f]/15 hover:text-[#e0c97f]/55"
                   )}
                 >
@@ -241,7 +238,7 @@ export function FloatingFilterBar() {
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] text-[#e94560]/70 hover:text-[#e94560] hover:bg-[#e94560]/8 transition-all border border-[#e94560]/15"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] text-[#e94560]/70 hover:text-[#e94560] hover:bg-[#e94560]/8 transition-all duration-300 border border-[#e94560]/15"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span className="hidden sm:inline">Reset</span>
@@ -335,7 +332,7 @@ function FilterChip({ active, onClick, icon, label, activeColor }: {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-200",
+        "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all duration-300",
         active
           ? "border-opacity-30 shadow-sm"
           : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/35 hover:text-[#e0c97f]/55 hover:border-[#e0c97f]/15"

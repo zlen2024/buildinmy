@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useMapStore, CATEGORY_CONFIG, type VenueCategory, type LocationPin } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { NearbyVenues } from "@/components/NearbyVenues";
 
 // Category hero images (generated for NomadMY)
 const CATEGORY_HERO_IMAGES: Record<string, string> = {
@@ -48,7 +49,35 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
   const compareIds = useMapStore((s) => s.compareIds);
   const toggleCompare = useMapStore((s) => s.toggleCompare);
   const isCompared = compareIds.includes(venue.id);
+  const locations = useMapStore((s) => s.locations);
   const [shared, setShared] = useState(false);
+
+  // Drag-to-dismiss gesture state
+  const dragRef = useRef({ startY: 0, isDragging: false });
+  const [dragDelta, setDragDelta] = useState(0);
+
+  const handleDragTouchStart = useCallback((e: React.TouchEvent) => {
+    dragRef.current.startY = e.touches[0].clientY;
+    dragRef.current.isDragging = true;
+  }, []);
+
+  const handleDragTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragRef.current.isDragging) return;
+    const delta = e.touches[0].clientY - dragRef.current.startY;
+    // Only allow downward drag
+    if (delta > 0) {
+      setDragDelta(delta);
+    }
+  }, []);
+
+  const handleDragTouchEnd = useCallback(() => {
+    if (!dragRef.current.isDragging) return;
+    dragRef.current.isDragging = false;
+    if (dragDelta > 100) {
+      onClose();
+    }
+    setDragDelta(0);
+  }, [dragDelta, onClose]);
 
   // Animated Wi-Fi bar width percentage
   const wifiBarWidth = useMemo(() => Math.min(100, (venue.avgDownloadMbps / 300) * 100), [venue.avgDownloadMbps]);
@@ -64,7 +93,15 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-hidden"
       >
-        <div className="bg-[#0d1b2a]/98 backdrop-blur-2xl border-t border-[#e0c97f]/15 rounded-t-3xl shadow-2xl shadow-black/60">
+        <div className="bg-[#0d1b2a]/98 backdrop-blur-2xl border-t border-[#e0c97f]/15 rounded-t-3xl shadow-2xl shadow-black/60"
+          style={{ transform: dragDelta > 0 ? `translateY(${dragDelta}px)` : undefined, transition: dragDelta > 0 ? 'none' : undefined }}
+        >
+          {/* Drag handle zone — only the header area triggers dismiss gesture */}
+          <div
+            onTouchStart={handleDragTouchStart}
+            onTouchMove={handleDragTouchMove}
+            onTouchEnd={handleDragTouchEnd}
+          >
           {/* Photo Banner with Category Gradient */}
           <div className="relative h-28 overflow-hidden rounded-t-3xl">
             {/* Gradient background */}
@@ -202,6 +239,8 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
               </button>
             </div>
           </div>
+
+          </div>{/* end drag handle zone */}
 
           {/* Content */}
           <div className="px-5 pb-6 overflow-y-auto max-h-[55vh] space-y-5">
@@ -357,6 +396,12 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 <span className="relative">Open in Google Maps</span>
               </a>
             )}
+
+            {/* Section Divider */}
+            <SectionDivider />
+
+            {/* Nearby Venues */}
+            <NearbyVenues currentVenue={venue} allVenues={locations} />
           </div>
         </div>
       </motion.div>

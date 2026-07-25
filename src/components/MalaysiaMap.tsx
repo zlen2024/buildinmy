@@ -6,6 +6,8 @@ import { createMalaysiaMap } from "krackedmaps";
 import "krackedmaps/css";
 import { useMapStore, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, SLUG_TO_STATE } from "@/lib/map-store";
 import type { LocationPin } from "@/lib/map-store";
+import { MapPinTooltip } from "@/components/MapPinTooltip";
+import { QuickStatsOverlay } from "@/components/QuickStatsOverlay";
 
 interface StateSelectPayload {
   state?: string;
@@ -24,10 +26,14 @@ export function MalaysiaMap() {
 
   const locations = useMapStore((s) => s.locations);
   const selectedState = useMapStore((s) => s.selectedState);
+  const selectedVenue = useMapStore((s) => s.selectedVenue);
   const setSelectedState = useMapStore((s) => s.setSelectedState);
   const setSelectedVenue = useMapStore((s) => s.setSelectedVenue);
+  const sidebarOpen = useMapStore((s) => s.sidebarOpen);
 
   const [mapReady, setMapReady] = useState(false);
+  const [hoveredVenue, setHoveredVenue] = useState<LocationPin | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Custom dark theme for the map
   const customTheme: Record<string, string> = {
@@ -174,6 +180,39 @@ export function MalaysiaMap() {
     }
   }, [selectedState]);
 
+  // Pin hover tooltip — event delegation on SVG .pin[data-id] groups
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+
+    const map = mapInstanceRef.current;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const pinEl = (e.target as Element).closest('.pin[data-id]');
+      if (!pinEl) return;
+
+      const venueId = pinEl.getAttribute('data-id');
+      if (!venueId) return;
+
+      const venue = venueById.get(venueId);
+      if (venue) {
+        setHoveredVenue(venue);
+        setTooltipPosition({ x: e.clientX, y: e.clientY });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setHoveredVenue(null);
+      setTooltipPosition(null);
+    };
+
+    map.root.addEventListener('mousemove', handleMouseMove);
+    map.root.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      map.root.removeEventListener('mousemove', handleMouseMove);
+      map.root.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [mapReady, venueById]);
+
   // Venue count for selected state
   const venueCount = visibleLocations.length;
 
@@ -181,11 +220,21 @@ export function MalaysiaMap() {
     <div className="relative w-full h-full min-h-screen bg-[#0a0a0f] overflow-hidden">
       <div ref={mapRef} className="w-full h-full min-h-screen" />
 
+      {/* Map pin hover tooltip — hidden when venue drawer is open */}
+      <MapPinTooltip venue={selectedVenue ? null : hoveredVenue} position={selectedVenue ? null : tooltipPosition} />
+
       {/* Map overlay gradient for readability */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#0a0a0f]/80 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-[#0a0a0f]/90 to-transparent" />
       </div>
+
+      {/* Quick Stats Overlay */}
+      <QuickStatsOverlay
+        visibleLocations={visibleLocations}
+        selectedState={selectedState}
+        sidebarOpen={sidebarOpen}
+      />
 
       {/* Floating legend — glass-card enhanced */}
       <div className="absolute top-20 right-4 glass-card p-4 pointer-events-auto min-w-[140px]">
