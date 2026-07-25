@@ -3,58 +3,85 @@
 import { useMapStore, CATEGORY_CONFIG, type VenueCategory, type LocationPin, useFilteredLocations } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
-  X,
   Star,
   Wifi,
   Plug,
   Volume2,
   Coffee,
   MapPin,
-  ExternalLink,
   ChevronRight,
   LayoutList,
+  Heart,
+  Loader2,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function VenueList() {
   const filteredLocations = useFilteredLocations();
   const setSelectedVenue = useMapStore((s) => s.setSelectedVenue);
   const searchQuery = useMapStore((s) => s.searchQuery);
+  const isLoading = useMapStore((s) => s.isLoading);
+  const toggleFavorite = useMapStore((s) => s.toggleFavorite);
+  const favoriteIds = useMapStore((s) => s.favoriteIds);
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-[#e0c97f]/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <LayoutList className="w-4 h-4 text-[#e0c97f]/60" />
+            <LayoutList className="w-4 h-4 text-[#e0c97f]/50" />
             <h2 className="text-sm font-semibold text-[#e0c97f]">Venues</h2>
           </div>
-          <span className="text-[10px] text-[#e0c97f]/30">
-            {filteredLocations.length} result{filteredLocations.length !== 1 ? "s" : ""}
-          </span>
+          {!isLoading && (
+            <span className="text-[10px] text-[#e0c97f]/25 bg-[#e0c97f]/5 px-2 py-0.5 rounded-full">
+              {filteredLocations.length} result{filteredLocations.length !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
         {searchQuery && (
-          <p className="text-[10px] text-[#e0c97f]/40 mt-1">
+          <p className="text-[10px] text-[#e0c97f]/30 mt-1">
             Showing results for &quot;{searchQuery}&quot;
           </p>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {filteredLocations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <MapPin className="w-8 h-8 text-[#e0c97f]/20 mb-3" />
-            <p className="text-sm text-[#e0c97f]/40">No venues found</p>
-            <p className="text-xs text-[#e0c97f]/25 mt-1">Try adjusting your filters or search query</p>
+        {/* Loading state */}
+        {isLoading ? (
+          <div className="p-4 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="w-10 h-10 rounded-lg bg-[#e0c97f]/5" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-3/4 rounded bg-[#e0c97f]/5" />
+                  <Skeleton className="h-2.5 w-1/2 rounded bg-[#e0c97f]/3" />
+                  <div className="flex gap-3">
+                    <Skeleton className="h-2.5 w-16 rounded bg-[#e0c97f]/3" />
+                    <Skeleton className="h-2.5 w-10 rounded bg-[#e0c97f]/3" />
+                    <Skeleton className="h-2.5 w-14 rounded bg-[#e0c97f]/3" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredLocations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <MapPin className="w-8 h-8 text-[#e0c97f]/15 mb-3" />
+            <p className="text-sm text-[#e0c97f]/30">No venues found</p>
+            <p className="text-xs text-[#e0c97f]/20 mt-1">Try adjusting your filters or search query</p>
           </div>
         ) : (
           <div className="divide-y divide-[#e0c97f]/5">
-            {filteredLocations.map((venue) => (
+            {filteredLocations.map((venue, index) => (
               <VenueCard
                 key={venue.id}
                 venue={venue}
+                index={index}
                 onClick={() => setSelectedVenue(venue)}
+                isFavorite={favoriteIds.includes(venue.id)}
+                onToggleFavorite={() => toggleFavorite(venue.id)}
               />
             ))}
           </div>
@@ -66,80 +93,92 @@ export function VenueList() {
 
 interface VenueCardProps {
   venue: LocationPin;
+  index: number;
   onClick: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }
 
-function VenueCard({ venue, onClick }: VenueCardProps) {
+function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: VenueCardProps) {
   const categoryConfig = CATEGORY_CONFIG[venue.category as VenueCategory];
 
   return (
     <motion.button
-      whileHover={{ backgroundColor: "rgba(224, 201, 127, 0.05)" }}
-      whileTap={{ scale: 0.99 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 30, 150), duration: 0.2 }}
+      whileHover={{ backgroundColor: "rgba(224, 201, 127, 0.04)" }}
+      whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      className="w-full flex items-start gap-3 p-4 text-left transition-colors hover:bg-[#e0c97f]/5"
+      className="w-full flex items-start gap-3 p-3.5 text-left transition-colors hover:bg-[#e0c97f]/4 group"
     >
       {/* Category icon */}
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ backgroundColor: categoryConfig.color + "15" }}
+        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm"
+        style={{ backgroundColor: categoryConfig.color + "12" }}
       >
-        <span className="text-lg">
-          {venue.category === "coworking" ? "🏢" : venue.category === "cafe" ? "☕" : venue.category === "public_space" ? "📚" : "🏠"}
-        </span>
+        <span className="text-base">{categoryConfig.emoji}</span>
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-[#e0c97f] truncate">{venue.name}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-medium text-[#e0c97f] truncate group-hover:text-[#e0c97f]">{venue.name}</h3>
         </div>
-        <p className="text-[11px] text-[#e0c97f]/40 mt-0.5 truncate">{venue.area}, {venue.state}</p>
+        <p className="text-[10px] text-[#e0c97f]/30 mt-0.5 truncate">{venue.area}, {venue.state}</p>
 
         {/* Metrics row */}
-        <div className="flex items-center gap-3 mt-2">
-          <div className="flex items-center gap-1">
-            <Wifi className="w-3 h-3 text-[#e0c97f]/30" />
+        <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-0.5">
+            <Wifi className="w-2.5 h-2.5 text-[#e0c97f]/20" />
             <span className={cn(
-              "text-[10px] font-medium",
-              venue.avgDownloadMbps > 100 ? "text-[#22c55e]" : venue.avgDownloadMbps > 50 ? "text-[#f59e0b]" : "text-[#e0c97f]/40"
+              "text-[9px] font-medium",
+              venue.avgDownloadMbps > 100 ? "text-[#22c55e]" : venue.avgDownloadMbps > 50 ? "text-[#f59e0b]" : "text-[#e0c97f]/30"
             )}>
-              {venue.avgDownloadMbps} Mbps
+              {venue.avgDownloadMbps}
             </span>
           </div>
 
           {venue.googleRating && (
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-amber-400/60 fill-amber-400/60" />
-              <span className="text-[10px] text-[#e0c97f]/50">{venue.googleRating}</span>
+            <div className="flex items-center gap-0.5">
+              <Star className="w-2.5 h-2.5 text-amber-400/50 fill-amber-400/50" />
+              <span className="text-[9px] text-[#e0c97f]/40">{venue.googleRating}</span>
             </div>
           )}
 
           {venue.workProfile?.powerOutlets === "high" && (
-            <Badge variant="outline" className="text-[9px] px-1 py-0 border-[#22c55e]/30 text-[#22c55e]/60 bg-[#22c55e]/5 h-4">
+            <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#22c55e]/25 text-[#22c55e]/50 bg-[#22c55e]/5 h-3.5 leading-none">
               <Plug className="w-2 h-2 mr-0.5" />
               High
             </Badge>
           )}
 
           {venue.workProfile?.noiseLevel === "quiet" && (
-            <Badge variant="outline" className="text-[9px] px-1 py-0 border-[#3b82f6]/30 text-[#3b82f6]/60 bg-[#3b82f6]/5 h-4">
+            <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#3b82f6]/25 text-[#3b82f6]/50 bg-[#3b82f6]/5 h-3.5 leading-none">
               <Volume2 className="w-2 h-2 mr-0.5" />
               Quiet
             </Badge>
           )}
 
           {venue.venueCost && (
-            <span className="text-[10px] text-[#e0c97f]/30">
+            <span className="text-[9px] text-[#e0c97f]/25">
               <Coffee className="w-2.5 h-2.5 inline mr-0.5" />
-              RM {venue.venueCost.coffeePriceMyr.toFixed(0)}
+              {venue.venueCost.coffeePriceMyr.toFixed(0)}
             </span>
           )}
         </div>
       </div>
 
-      {/* Arrow */}
-      <ChevronRight className="w-4 h-4 text-[#e0c97f]/20 flex-shrink-0 mt-2" />
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 flex-shrink-0 mt-1">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+          className="p-1 rounded-md text-[#e0c97f]/15 hover:text-[#e94560] transition-colors"
+        >
+          <Heart className={cn("w-3.5 h-3.5", isFavorite && "fill-[#e94560] text-[#e94560]")} />
+        </button>
+        <ChevronRight className="w-3.5 h-3.5 text-[#e0c97f]/10 group-hover:text-[#e0c97f]/25 transition-colors" />
+      </div>
     </motion.button>
   );
 }

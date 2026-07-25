@@ -1,8 +1,16 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export type VenueCategory = 'coworking' | 'cafe' | 'public_space' | 'coliving'
 export type PowerDensity = 'high' | 'moderate' | 'sparse' | 'none'
 export type NoiseLevel = 'silent' | 'quiet' | 'moderate' | 'loud'
+
+export interface TransitLink {
+  nearestStationName: string
+  stationLine: string
+  walkTimeMins: number
+  distanceMeters: number
+}
 
 export interface LocationPin {
   id: string
@@ -32,6 +40,7 @@ export interface LocationPin {
     dayPassMyr: number | null
     minSpendMyr: number
   } | null
+  transitLinks?: TransitLink[]
 }
 
 interface MapState {
@@ -59,6 +68,10 @@ interface MapState {
   sidebarOpen: boolean
   // Mobile nav active section
   activeNavSection: string
+  // Favorites (persisted)
+  favoriteIds: string[]
+  // Comparison list
+  compareIds: string[]
 
   // Actions
   setSelectedState: (state: string | null) => void
@@ -76,6 +89,11 @@ interface MapState {
   setSidebarOpen: (open: boolean) => void
   setActiveNavSection: (section: string) => void
   resetFilters: () => void
+  toggleFavorite: (id: string) => void
+  isFavorite: (id: string) => boolean
+  toggleCompare: (id: string) => void
+  isCompared: (id: string) => boolean
+  clearCompare: () => void
 }
 
 const defaultFilters = {
@@ -87,42 +105,74 @@ const defaultFilters = {
   callFriendly: false,
 }
 
-export const useMapStore = create<MapState>((set) => ({
-  selectedState: null,
-  selectedDistrict: null,
-  searchQuery: '',
-  activeCategories: [],
-  minWifiSpeed: 0,
-  highPowerSockets: false,
-  quietEnvironment: false,
-  callFriendly: false,
-  selectedVenue: null,
-  locations: [],
-  isLoading: false,
-  sidebarOpen: true,
-  activeNavSection: 'map',
+export const useMapStore = create<MapState>()(
+  persist(
+    (set, get) => ({
+      selectedState: null,
+      selectedDistrict: null,
+      searchQuery: '',
+      activeCategories: [],
+      minWifiSpeed: 0,
+      highPowerSockets: false,
+      quietEnvironment: false,
+      callFriendly: false,
+      selectedVenue: null,
+      locations: [],
+      isLoading: false,
+      sidebarOpen: true,
+      activeNavSection: 'map',
+      favoriteIds: [],
+      compareIds: [],
 
-  setSelectedState: (state) => set({ selectedState: state }),
-  setSelectedDistrict: (district) => set({ selectedDistrict: district }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
-  toggleCategory: (category) =>
-    set((state) => ({
-      activeCategories: state.activeCategories.includes(category)
-        ? state.activeCategories.filter((c) => c !== category)
-        : [...state.activeCategories, category],
-    })),
-  setCategories: (categories) => set({ activeCategories: categories }),
-  setMinWifiSpeed: (speed) => set({ minWifiSpeed: speed }),
-  setHighPowerSockets: (value) => set({ highPowerSockets: value }),
-  setQuietEnvironment: (value) => set({ quietEnvironment: value }),
-  setCallFriendly: (value) => set({ callFriendly: value }),
-  setSelectedVenue: (venue) => set({ selectedVenue: venue }),
-  setLocations: (locations) => set({ locations }),
-  setIsLoading: (loading) => set({ isLoading: loading }),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setActiveNavSection: (section) => set({ activeNavSection: section }),
-  resetFilters: () => set(defaultFilters),
-}))
+      setSelectedState: (state) => set({ selectedState: state }),
+      setSelectedDistrict: (district) => set({ selectedDistrict: district }),
+      setSearchQuery: (query) => set({ searchQuery: query }),
+      toggleCategory: (category) =>
+        set((state) => ({
+          activeCategories: state.activeCategories.includes(category)
+            ? state.activeCategories.filter((c) => c !== category)
+            : [...state.activeCategories, category],
+        })),
+      setCategories: (categories) => set({ activeCategories: categories }),
+      setMinWifiSpeed: (speed) => set({ minWifiSpeed: speed }),
+      setHighPowerSockets: (value) => set({ highPowerSockets: value }),
+      setQuietEnvironment: (value) => set({ quietEnvironment: value }),
+      setCallFriendly: (value) => set({ callFriendly: value }),
+      setSelectedVenue: (venue) => set({ selectedVenue: venue }),
+      setLocations: (locations) => set({ locations }),
+      setIsLoading: (loading) => set({ isLoading: loading }),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setActiveNavSection: (section) => set({ activeNavSection: section }),
+      resetFilters: () => set(defaultFilters),
+      toggleFavorite: (id) =>
+        set((state) => ({
+          favoriteIds: state.favoriteIds.includes(id)
+            ? state.favoriteIds.filter((f) => f !== id)
+            : [...state.favoriteIds, id],
+        })),
+      isFavorite: (id) => get().favoriteIds.includes(id),
+      toggleCompare: (id) =>
+        set((state) => {
+          if (state.compareIds.includes(id)) {
+            return { compareIds: state.compareIds.filter((c) => c !== id) }
+          }
+          if (state.compareIds.length >= 3) {
+            return state // max 3 items
+          }
+          return { compareIds: [...state.compareIds, id] }
+        }),
+      isCompared: (id) => get().compareIds.includes(id),
+      clearCompare: () => set({ compareIds: [] }),
+    }),
+    {
+      name: 'nomadmy-storage',
+      partialize: (state) => ({
+        favoriteIds: state.favoriteIds,
+        sidebarOpen: state.sidebarOpen,
+      }),
+    }
+  )
+)
 
 // Filtered locations selector
 export function useFilteredLocations(): LocationPin[] {
@@ -201,6 +251,18 @@ export const STATE_DISPLAY_NAMES: Record<string, string> = {
   'sarawak': 'Sarawak',
 }
 
+// Slug → display name
+export const SLUG_TO_STATE: Record<string, string> = {
+  'kuala-lumpur': 'Kuala Lumpur',
+  'putrajaya': 'Kuala Lumpur',
+  'selangor': 'Selangor',
+  'penang': 'Penang',
+  'johor': 'Johor',
+  'melaka': 'Melaka',
+  'sabah': 'Sabah',
+  'sarawak': 'Sarawak',
+}
+
 // Malaysian states with venue data
 export const ACTIVE_STATES = [
   { slug: 'kuala-lumpur', name: 'Kuala Lumpur', count: 0 },
@@ -212,9 +274,9 @@ export const ACTIVE_STATES = [
   { slug: 'sarawak', name: 'Sarawak', count: 0 },
 ]
 
-export const CATEGORY_CONFIG: Record<VenueCategory, { label: string; icon: string; color: string }> = {
-  coworking: { label: 'Coworking', icon: 'Building2', color: '#22c55e' },
-  cafe: { label: 'Work Cafe', icon: 'Coffee', color: '#f59e0b' },
-  public_space: { label: 'Public Space', icon: 'Library', color: '#3b82f6' },
-  coliving: { label: 'Co-living', icon: 'Home', color: '#a855f7' },
+export const CATEGORY_CONFIG: Record<VenueCategory, { label: string; icon: string; color: string; emoji: string }> = {
+  coworking: { label: 'Coworking', icon: 'Building2', color: '#22c55e', emoji: '🏢' },
+  cafe: { label: 'Work Cafe', icon: 'Coffee', color: '#f59e0b', emoji: '☕' },
+  public_space: { label: 'Public Space', icon: 'Library', color: '#3b82f6', emoji: '📚' },
+  coliving: { label: 'Co-living', icon: 'Home', color: '#a855f7', emoji: '🏠' },
 }

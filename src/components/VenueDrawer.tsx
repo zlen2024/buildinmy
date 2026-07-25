@@ -19,6 +19,8 @@ import {
   ThermometerSun,
   Laptop,
   MapPin,
+  Heart,
+  GitCompareArrows,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +32,12 @@ interface VenueDrawerProps {
 
 export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
   const categoryConfig = CATEGORY_CONFIG[venue.category as VenueCategory];
+  const favoriteIds = useMapStore((s) => s.favoriteIds);
+  const toggleFavorite = useMapStore((s) => s.toggleFavorite);
+  const isFav = favoriteIds.includes(venue.id);
+  const compareIds = useMapStore((s) => s.compareIds);
+  const toggleCompare = useMapStore((s) => s.toggleCompare);
+  const isCompared = compareIds.includes(venue.id);
 
   return (
     <AnimatePresence>
@@ -78,12 +86,37 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 )}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-[#e0c97f]/10 text-[#e0c97f]/40 hover:text-[#e0c97f] transition-colors flex-shrink-0"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => toggleCompare(venue.id)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  isCompared
+                    ? "bg-[#e0c97f]/15 text-[#e0c97f]"
+                    : "hover:bg-[#e0c97f]/10 text-[#e0c97f]/30 hover:text-[#e0c97f]/60"
+                )}
+                title={isCompared ? "Remove from comparison" : "Add to comparison"}
+              >
+                <GitCompareArrows className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => toggleFavorite(venue.id)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  isFav
+                    ? "bg-[#e94560]/15 text-[#e94560]"
+                    : "hover:bg-[#e0c97f]/10 text-[#e0c97f]/30 hover:text-[#e0c97f]/60"
+                )}
+              >
+                <Heart className={cn("w-4 h-4", isFav && "fill-[#e94560]")} />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-[#e0c97f]/10 text-[#e0c97f]/40 hover:text-[#e0c97f] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Content */}

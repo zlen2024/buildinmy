@@ -1,6 +1,6 @@
 "use client";
 
-import { useMapStore, ACTIVE_STATES, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, type VenueCategory } from "@/lib/map-store";
+import { useMapStore, ACTIVE_STATES, CATEGORY_CONFIG, type VenueCategory } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
   Map,
@@ -10,10 +10,11 @@ import {
   Home,
   TrainFront,
   BarChart3,
-  Settings,
+  Heart,
   X,
   ChevronLeft,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_ITEMS = [
   { id: "map", icon: Map, label: "Map" },
@@ -23,7 +24,7 @@ const NAV_ITEMS = [
   { id: "coliving", icon: Home, label: "Co-living" },
   { id: "transport", icon: TrainFront, label: "Transport" },
   { id: "stats", icon: BarChart3, label: "Stats" },
-  { id: "settings", icon: Settings, label: "Settings" },
+  { id: "favorites", icon: Heart, label: "Favorites" },
 ];
 
 export function SidebarNav() {
@@ -35,6 +36,8 @@ export function SidebarNav() {
   const activeCategories = useMapStore((s) => s.activeCategories);
   const activeNavSection = useMapStore((s) => s.activeNavSection);
   const setActiveNavSection = useMapStore((s) => s.setActiveNavSection);
+  const favoriteIds = useMapStore((s) => s.favoriteIds);
+  const locations = useMapStore((s) => s.locations);
 
   const handleNavClick = (id: string) => {
     if (id === "map") {
@@ -48,12 +51,18 @@ export function SidebarNav() {
   return (
     <>
       {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside
@@ -68,57 +77,100 @@ export function SidebarNav() {
         )}
       >
         {/* Logo / Brand */}
-        <div className="flex items-center justify-between p-4 border-b border-[#e0c97f]/10">
+        <div className="flex items-center justify-between p-4 border-b border-[#e0c97f]/10 min-h-[60px]">
           {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e0c97f] to-[#e94560] flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2.5"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#e0c97f] to-[#e94560] flex items-center justify-center shadow-lg shadow-[#e0c97f]/10">
                 <Map className="w-4 h-4 text-[#0a0a0f]" />
               </div>
               <div>
                 <h1 className="text-sm font-bold text-[#e0c97f] tracking-tight">NomadMY</h1>
-                <p className="text-[10px] text-[#e0c97f]/40">Digital Nomad Hub</p>
+                <p className="text-[9px] text-[#e0c97f]/30 font-medium tracking-wider uppercase">Digital Nomad Hub</p>
+              </div>
+            </motion.div>
+          )}
+          {!sidebarOpen && (
+            <div className="mx-auto">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e0c97f] to-[#e94560] flex items-center justify-center">
+                <Map className="w-3.5 h-3.5 text-[#0a0a0f]" />
               </div>
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 rounded-md hover:bg-[#e0c97f]/10 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-colors lg:block hidden"
+            className="p-1.5 rounded-md hover:bg-[#e0c97f]/10 text-[#e0c97f]/40 hover:text-[#e0c97f] transition-colors lg:block hidden"
           >
-            <ChevronLeft className={cn("w-4 h-4 transition-transform", !sidebarOpen && "rotate-180")} />
+            <ChevronLeft className={cn("w-4 h-4 transition-transform duration-300", !sidebarOpen && "rotate-180")} />
           </button>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="p-1.5 rounded-md hover:bg-[#e0c97f]/10 text-[#e0c97f]/60 hover:text-[#e0c97f] transition-colors lg:hidden"
+            className="p-1.5 rounded-md hover:bg-[#e0c97f]/10 text-[#e0c97f]/40 hover:text-[#e0c97f] transition-colors lg:hidden"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-2.5 px-2.5 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const isActive = activeNavSection === item.id;
             const isCategoryActive = Object.keys(CATEGORY_CONFIG).includes(item.id)
               ? activeCategories.includes(item.id as VenueCategory)
               : false;
 
+            // Show favorite count badge
+            const showFavBadge = item.id === "favorites" && favoriteIds.length > 0;
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative",
                   isActive || isCategoryActive
-                    ? "bg-[#e0c97f]/15 text-[#e0c97f]"
-                    : "text-[#e0c97f]/50 hover:bg-[#e0c97f]/8 hover:text-[#e0c97f]/80"
+                    ? "bg-[#e0c97f]/12 text-[#e0c97f]"
+                    : "text-[#e0c97f]/40 hover:bg-[#e0c97f]/6 hover:text-[#e0c97f]/70"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 flex-shrink-0", isCategoryActive && "text-[#e0c97f]")} />
-                {sidebarOpen && (
-                  <span className="text-sm font-medium truncate">{item.label}</span>
+                {/* Active indicator line */}
+                {(isActive || isCategoryActive) && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#e0c97f]"
+                  />
                 )}
+
+                <item.icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-colors", isCategoryActive && "text-[#e0c97f]")} />
+                <AnimatePresence>
+                  {sidebarOpen && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      className="text-sm font-medium truncate overflow-hidden"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+
+                {/* Favorite count */}
+                {showFavBadge && (
+                  <span className={cn(
+                    "ml-auto min-w-[18px] h-[18px] rounded-full bg-[#e94560] text-[10px] font-bold text-white flex items-center justify-center px-1",
+                    !sidebarOpen && "absolute -top-1 -right-1 w-4 h-4 text-[8px] min-w-0 px-0"
+                  )}>
+                    {favoriteIds.length}
+                  </span>
+                )}
+
+                {/* Category active dot */}
                 {sidebarOpen && isCategoryActive && (
-                  <span className="ml-auto w-2 h-2 rounded-full bg-[#e0c97f]" />
+                  <span className="ml-auto w-2 h-2 rounded-full bg-[#e0c97f] animate-pulse" />
                 )}
               </button>
             );
@@ -126,38 +178,55 @@ export function SidebarNav() {
         </nav>
 
         {/* State Quick Access (when sidebar is open) */}
-        {sidebarOpen && (
-          <div className="p-3 border-t border-[#e0c97f]/10">
-            <p className="text-[10px] font-semibold text-[#e0c97f]/40 uppercase tracking-wider mb-2 px-1">
-              Regions
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {ACTIVE_STATES.map((state) => (
-                <button
-                  key={state.slug}
-                  onClick={() => setSelectedState(selectedState === state.slug ? null : state.slug)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
-                    selectedState === state.slug
-                      ? "bg-[#e0c97f] text-[#0a0a0f]"
-                      : "bg-[#e0c97f]/8 text-[#e0c97f]/60 hover:bg-[#e0c97f]/15 hover:text-[#e0c97f]"
-                  )}
-                >
-                  {state.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="p-3 border-t border-[#e0c97f]/10 overflow-hidden"
+            >
+              <p className="text-[10px] font-semibold text-[#e0c97f]/30 uppercase tracking-widest mb-2.5 px-1">
+                Regions
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {ACTIVE_STATES.map((state) => {
+                  const count = locations.filter((l) => {
+                    const mapped = SLUG_TO_STATE_MAP[state.slug] || state.slug;
+                    return l.state === mapped;
+                  }).length;
+
+                  return (
+                    <button
+                      key={state.slug}
+                      onClick={() => setSelectedState(selectedState === state.slug ? null : state.slug)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-[10px] font-medium transition-all border",
+                        selectedState === state.slug
+                          ? "bg-[#e0c97f] text-[#0a0a0f] border-[#e0c97f] shadow-sm shadow-[#e0c97f]/20"
+                          : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/45 hover:bg-[#e0c97f]/10 hover:border-[#e0c97f]/15 hover:text-[#e0c97f]/70"
+                      )}
+                    >
+                      {state.name}
+                      {count > 0 && (
+                        <span className="ml-1 opacity-50">{count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </aside>
 
       {/* Mobile hamburger */}
       <button
         onClick={() => setSidebarOpen(true)}
         className={cn(
-          "fixed top-4 left-4 z-30 p-2.5 rounded-lg",
+          "fixed top-4 left-4 z-30 p-2.5 rounded-xl",
           "bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20",
-          "text-[#e0c97f] lg:hidden",
+          "text-[#e0c97f] shadow-lg shadow-black/20 lg:hidden",
           sidebarOpen && "hidden"
         )}
       >
@@ -166,3 +235,14 @@ export function SidebarNav() {
     </>
   );
 }
+
+const SLUG_TO_STATE_MAP: Record<string, string> = {
+  'kuala-lumpur': 'Kuala Lumpur',
+  'putrajaya': 'Kuala Lumpur',
+  'selangor': 'Selangor',
+  'penang': 'Penang',
+  'johor': 'Johor',
+  'melaka': 'Melaka',
+  'sabah': 'Sabah',
+  'sarawak': 'Sarawak',
+};
