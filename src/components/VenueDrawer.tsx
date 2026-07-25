@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useMapStore, CATEGORY_CONFIG, type VenueCategory, type LocationPin } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +22,7 @@ import {
   MapPin,
   Heart,
   GitCompareArrows,
+  Share2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +40,7 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
   const compareIds = useMapStore((s) => s.compareIds);
   const toggleCompare = useMapStore((s) => s.toggleCompare);
   const isCompared = compareIds.includes(venue.id);
+  const [shared, setShared] = useState(false);
 
   return (
     <AnimatePresence>
@@ -98,6 +101,34 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 title={isCompared ? "Remove from comparison" : "Add to comparison"}
               >
                 <GitCompareArrows className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}?venue=${venue.id}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    setShared(true);
+                    setTimeout(() => setShared(false), 2000);
+                  });
+                }}
+                className={cn(
+                  "p-2 rounded-lg transition-colors relative",
+                  shared
+                    ? "bg-[#22c55e]/15 text-[#22c55e]"
+                    : "hover:bg-[#e0c97f]/10 text-[#e0c97f]/30 hover:text-[#e0c97f]/60"
+                )}
+                title="Copy share link"
+              >
+                <Share2 className="w-4 h-4" />
+                {shared && (
+                  <motion.span
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute -top-8 left-1/2 -translate-x-1/2 text-[9px] bg-[#22c55e] text-white px-2 py-0.5 rounded-full whitespace-nowrap"
+                  >
+                    Copied!
+                  </motion.span>
+                )}
               </button>
               <button
                 onClick={() => toggleFavorite(venue.id)}

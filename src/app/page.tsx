@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, Suspense } from "react";
 import { MalaysiaMap } from "@/components/MalaysiaMap";
 import { SidebarNav } from "@/components/SidebarNav";
 import { TopHeader } from "@/components/TopHeader";
@@ -10,9 +10,12 @@ import { VenueList } from "@/components/VenueList";
 import { StatsPanel } from "@/components/StatsPanel";
 import { FavoritesList } from "@/components/FavoritesList";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { WifiLeaderboard } from "@/components/WifiLeaderboard";
+import { TopVenuesRanking } from "@/components/TopVenuesRanking";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 export default function HomePage() {
   const setLocations = useMapStore((s) => s.setLocations);
@@ -27,6 +30,8 @@ export default function HomePage() {
   const toggleFavorite = useMapStore((s) => s.toggleFavorite);
   const favoriteIds = useMapStore((s) => s.favoriteIds);
   const locations = useMapStore((s) => s.locations);
+
+  const searchParams = useSearchParams();
 
   // Fetch locations on mount
   const fetchLocations = useCallback(async () => {
@@ -49,10 +54,21 @@ export default function HomePage() {
     fetchLocations();
   }, [fetchLocations]);
 
+  // Handle shared venue link (?venue=ID)
+  useEffect(() => {
+    const venueId = searchParams.get("venue");
+    if (venueId && locations.length > 0) {
+      const venue = locations.find((l) => l.id === venueId);
+      if (venue) {
+        setSelectedVenue(venue);
+        setSidebarOpen(true);
+      }
+    }
+  }, [searchParams, locations, setSelectedVenue, setSidebarOpen]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key) {
@@ -65,7 +81,6 @@ export default function HomePage() {
           break;
         case "/":
           e.preventDefault();
-          // Focus the search input
           const searchInput = document.querySelector<HTMLInputElement>('input[placeholder*="Search"]');
           searchInput?.focus();
           break;
@@ -82,6 +97,10 @@ export default function HomePage() {
   // Determine panel content based on active nav
   const renderPanelContent = () => {
     switch (activeNavSection) {
+      case "leaderboard":
+        return <WifiLeaderboard />;
+      case "ranking":
+        return <TopVenuesRanking />;
       case "stats":
         return <StatsPanel />;
       case "favorites":
@@ -98,7 +117,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#0a0a0f]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0a0a0f] noise-bg">
       {/* Left Navigation Sidebar */}
       <SidebarNav />
 
@@ -175,5 +194,20 @@ export default function HomePage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function PageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-screen items-center justify-center bg-[#0a0a0f]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#e0c97f]/20 border-t-[#e0c97f] animate-spin" />
+          <p className="text-sm text-[#e0c97f]/30">Loading NomadMY...</p>
+        </div>
+      </div>
+    }>
+      <HomePage />
+    </Suspense>
   );
 }

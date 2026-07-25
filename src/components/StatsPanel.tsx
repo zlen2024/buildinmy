@@ -19,16 +19,6 @@ export function StatsPanel() {
   // State filter
   const filteredLocations = selectedState
     ? (() => {
-        const stateMap: Record<string, string[]> = {
-          'Kuala Lumpur': ['kuala-lumpur', 'putrajaya'],
-          'Selangor': ['selangor'],
-          'Penang': ['penang'],
-          'Johor': ['johor'],
-          'Melaka': ['melaka'],
-          'Sabah': ['sabah'],
-          'Sarawak': ['sarawak'],
-        };
-        const stateSlugs = stateMap[selectedState] || [];
         const stateNameMap: Record<string, string> = {
           'kuala-lumpur': 'Kuala Lumpur',
           'putrajaya': 'Kuala Lumpur',
@@ -38,6 +28,11 @@ export function StatsPanel() {
           'melaka': 'Melaka',
           'sabah': 'Sabah',
           'sarawak': 'Sarawak',
+          'perlis': 'Perlis',
+          'kedah': 'Kedah',
+          'pahang': 'Pahang',
+          'terengganu': 'Terengganu',
+          'negeri-sembilan': 'Negeri Sembilan',
         };
         const mappedState = stateNameMap[selectedState] || selectedState;
         return locations.filter((l) => l.state === mappedState);
@@ -76,7 +71,7 @@ export function StatsPanel() {
       </div>
 
       {/* Main stats grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard
           icon={<MapPin className="w-5 h-5" />}
           label="Total Venues"
@@ -136,14 +131,16 @@ export function StatsPanel() {
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="bg-[#e0c97f]/5 rounded-xl p-4 border border-[#e0c97f]/8"
+      whileHover={{ scale: 1.03 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="bg-[#e0c97f]/5 rounded-xl p-4 border-t-2 overflow-hidden"
+      style={{ borderColor: color, borderTopColor: `${color}40` }}
     >
       <div className="flex items-center gap-2 mb-2" style={{ color }}>
         {icon}
       </div>
-      <p className="text-xl font-bold" style={{ color }}>{value}</p>
-      <p className="text-[10px] text-[#e0c97f]/40 mt-0.5">{label}</p>
+      <p className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</p>
+      <p className="text-[11px] text-[#e0c97f]/40 mt-0.5 font-medium">{label}</p>
     </motion.div>
   );
 }

@@ -225,3 +225,188 @@ Add 15 more Malaysian venues to the seed file, covering states that previously h
 - Seed ran successfully: 40 locations across 12 states
 - No errors during seeding
 - All new states (Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan) populated
+
+---
+
+## Task 4-b — globals.css Styling Enhancements
+
+### Objective
+Improve src/app/globals.css with design tokens, custom scrollbar, glass utilities, keyframe animations, and noise texture overlay.
+
+### Changes Made
+
+#### 1. CSS Custom Properties (Design Tokens) — :root
+Added 5 NomadMY design tokens:
+- --navy-950: #0a0a0f
+- --navy-900: #0d1b2a
+- --gold: #e0c97f
+- --gold-dim: #e0c97f40
+- --red: #e94560
+
+#### 2. Body Base Styles — @layer base
+Enhanced existing body rule with:
+- font-feature-settings for better character rendering
+- -webkit-font-smoothing: antialiased
+- -moz-osx-font-smoothing: grayscale
+- scroll-behavior: smooth
+
+#### 3. Custom Scrollbar — Dark Theme
+- Webkit: 6px width, transparent track, gold-tinted thumb, hover darker gold
+- Firefox: scrollbar-width: thin and scrollbar-color with gold tint
+- .nav-scrollable: Hidden by default, revealed on hover
+
+#### 4. Glass Utility Classes
+- .glass — navy-900/90, blur-xl, border-gold/15, shadow-lg
+- .glass-strong — navy-900/95, blur-2xl, border-gold/20, shadow-xl
+- .glass-subtle — navy-900/60, blur-md, border-gold/8
+
+#### 5. Keyframe Animations
+- pinPulse — Gold box-shadow pulse
+- shimmer — Background position sweep for loading skeletons
+- gradientBorder — Looping gradient position for active filter bar
+
+#### 6. Noise Texture Overlay (.noise-bg::before)
+- SVG feTurbulence fractal noise as inline data URI
+- 256x256px tile, opacity 0.03, pointer-events none
+
+### Verification
+- Lint passes clean (0 errors, 0 warnings)
+- File grew from 123 to 275 lines, all existing content preserved
+
+---
+
+## Phase 4 — Bug Fixes, Styling Improvements & New Features
+
+### Status Assessment
+Phase 3 had completed the original build with 40 venues across 12 states. QA review identified multiple bugs and areas for improvement.
+
+### Bugs Fixed
+
+1. **CostExplorer.tsx — Missing `</BarChart>` closing tag + extra `</motion.div>`**
+   - BarChart JSX element at line 209 had no closing tag
+   - An extra `</motion.div>` was present causing "Expected corresponding JSX closing tag for 'div'" lint error
+
+2. **FavoritesList.tsx — Broken string literals (2 occurrences)**
+   - Lines 121, 131: `"#e0c97f]/40"` was invalid CSS color
+   - Fixed to `"rgba(224, 201, 127, 0.4)"` (proper CSS rgba)
+
+3. **Incomplete state-to-slug mappings (6 files)**
+   - The 5 new states added in Task 3f (Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan) were missing from:
+     - `SLUG_TO_STATE` in map-store.ts
+     - `ACTIVE_STATES` in map-store.ts
+     - `useFilteredLocations` stateMap in map-store.ts
+     - `SLUG_TO_STATE_MAP` in SidebarNav.tsx
+     - State filtering in TopHeader.tsx
+     - State filtering in StatsPanel.tsx
+   - All 12 states now correctly mapped
+
+### Styling Improvements
+
+1. **globals.css — Design system foundations**
+   - CSS custom properties for design tokens (--navy-950, --navy-900, --gold, --gold-dim, --red)
+   - Custom scrollbar styling (6px gold-tinted, Firefox scrollbar-width: thin)
+   - `.nav-scrollable` class: hidden scrollbar until hover
+   - `.glass`, `.glass-strong`, `.glass-subtle` utility classes for glassmorphism
+   - `@keyframes pinPulse`, `shimmer`, `gradientBorder` animations
+   - `.noise-bg::before` SVG noise texture overlay for depth
+   - Body: font-feature-settings, antialiased rendering, smooth scrolling
+
+2. **StatsPanel — Visual hierarchy improvements**
+   - StatCard values increased to `text-2xl` with `tabular-nums` for better number rendering
+   - `border-t-2` accent color on each StatCard matching its metric color
+   - Grid gap increased from `gap-3` to `gap-4`
+   - Labels upgraded to `text-[11px] font-medium`
+   - Snappier hover animation with spring physics
+
+3. **VenueList — Enhanced empty state**
+   - Replaced simple icon+text with decorative rounded-2xl gradient container
+   - Added "Clear Filters" CTA button that calls `resetFilters()`
+   - Added `nav-scrollable` class for cleaner scrollbar
+
+4. **FavoritesList — Enhanced empty state**
+   - Decorative heart container with gradient from red
+   - Improved text hierarchy and max-width constraint
+
+5. **Page.tsx — Layout enhancements**
+   - Added `noise-bg` class to root container for subtle texture
+   - Wrapped with `<Suspense>` for `useSearchParams()` (shared venue links)
+   - Loading spinner with gold border animation as Suspense fallback
+
+### New Features Added
+
+1. **Wi-Fi Speed Leaderboard (`WifiLeaderboard.tsx`)**
+   - Ranked list of all 40 venues sorted by avgDownloadMbps
+   - Top 3 get gold/silver/bronze rank badges
+   - Color-coded speed bars (green >100, amber >50, red ≤50)
+   - Mini horizontal bar showing relative speed
+   - Staggered entrance animations
+   - Click to open VenueDrawer
+   - Legend footer
+
+2. **Top 10 Venues Ranking (`TopVenuesRanking.tsx`)**
+   - Composite score: Wi-Fi 40% + Rating 35% + Cost 25%
+   - SVG score ring with gold→red gradient
+   - Rank badges with gradient backgrounds for top 3
+   - Key metrics displayed: Wi-Fi speed, rating, coffee price
+   - Score formula: wifiScore(min(dl/200,1))*0.4 + ratingScore(rating/5)*0.35 + costScore(max(1-price/30,0))*0.25
+
+3. **State Coverage Heatmap (`StateHeatmap.tsx`)**
+   - 3-column grid of state tiles replacing plain text pills in sidebar
+   - Background color interpolates based on venue count
+   - State abbreviations (KL, Sel, Pen, etc.) for compact display
+   - Intensity legend bar at bottom
+   - Top states get subtle glow effect
+   - Click to select state, hover shows full name tooltip
+
+4. **Share Venue Button**
+   - Added to VenueDrawer header (Share2 icon)
+   - Copies `?venue=ID` URL to clipboard
+   - Animated "Copied!" tooltip on success
+   - Green highlight on shared state
+
+5. **Shared Venue Deep Links**
+   - `page.tsx` reads `?venue=ID` from searchParams
+   - Auto-opens VenueDrawer for shared venue on page load
+   - Wrapped in Suspense boundary for proper async handling
+
+6. **Sidebar Navigation Updates**
+   - Added "Speed Rank" (Zap icon) and "Top 10" (Trophy icon) nav items
+   - Total 10 nav items now
+   - Replaced "Regions" text pills section with StateHeatmap component
+   - Removed unused ACTIVE_STATES import
+
+### Verification
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ Server compiles and serves HTTP 200
+- ✅ Page HTML contains "NomadMY", "Speed Rank", "Top 10", "Share" strings
+- ✅ API returns 40 venues across 12 states with full data
+- ✅ All state mappings consistent across 6 files
+
+---
+
+## Unresolved Issues / Next Phase Recommendations
+
+1. **East Malaysia rendering** — krackedmaps focuses on Peninsular Malaysia; Sabah/Sarawak pins may not render. Consider an inset mini-map or iframe fallback for East Malaysia.
+
+2. **agent-browser connectivity** — `agent-browser` cannot connect to localhost:3000 in this sandbox environment. Visual QA done via curl and code analysis only.
+
+3. **Google Maps verification pipeline** — Backend Google Places verification not yet implemented. Currently uses pre-seeded Google Place IDs.
+
+4. **Additional features to build:**
+   - Wi-Fi speedtest mini-service (real-time speed testing)
+   - User authentication (NextAuth)
+   - Venue submission flow with admin approval
+   - Transit proximity auto-calculation
+   - Community reviews/ratings system
+   - Map marker clustering
+   - Export venue data as PDF/CSV
+   - Mobile PWA support
+   - i18n support (English/Bahasa Melayu toggle exists but is non-functional)
+   - Drag-to-dismiss gesture on VenueDrawer
+   - Map pin click → open venue drawer
+
+5. **Polish opportunities:**
+   - Animated map pin placement
+   - Drill-down to district level in krackedmaps
+   - Dark/light theme fully working (currently defaults dark, light theme has hardcoded dark colors)
+   - Keyboard shortcut hints could show dynamically based on context

@@ -196,6 +196,11 @@ export function useFilteredLocations(): LocationPin[] {
         'Melaka': ['melaka'],
         'Sabah': ['sabah'],
         'Sarawak': ['sarawak'],
+        'Perlis': ['perlis'],
+        'Kedah': ['kedah'],
+        'Pahang': ['pahang'],
+        'Terengganu': ['terengganu'],
+        'Negeri Sembilan': ['negeri-sembilan'],
       }
       const stateSlugs = stateMap[loc.state] || []
       if (!stateSlugs.includes(selectedState)) return false
@@ -261,6 +266,11 @@ export const SLUG_TO_STATE: Record<string, string> = {
   'melaka': 'Melaka',
   'sabah': 'Sabah',
   'sarawak': 'Sarawak',
+  'perlis': 'Perlis',
+  'kedah': 'Kedah',
+  'pahang': 'Pahang',
+  'terengganu': 'Terengganu',
+  'negeri-sembilan': 'Negeri Sembilan',
 }
 
 // Malaysian states with venue data
@@ -272,6 +282,11 @@ export const ACTIVE_STATES = [
   { slug: 'melaka', name: 'Melaka', count: 0 },
   { slug: 'sabah', name: 'Sabah', count: 0 },
   { slug: 'sarawak', name: 'Sarawak', count: 0 },
+  { slug: 'perlis', name: 'Perlis', count: 0 },
+  { slug: 'kedah', name: 'Kedah', count: 0 },
+  { slug: 'pahang', name: 'Pahang', count: 0 },
+  { slug: 'terengganu', name: 'Terengganu', count: 0 },
+  { slug: 'negeri-sembilan', name: 'N. Sembilan', count: 0 },
 ]
 
 export const CATEGORY_CONFIG: Record<VenueCategory, { label: string; icon: string; color: string; emoji: string }> = {

@@ -13,15 +13,6 @@ export function TopHeader() {
 
   const activeVenueCount = selectedState
     ? (() => {
-        const stateMap: Record<string, string[]> = {
-          'Kuala Lumpur': ['kuala-lumpur', 'putrajaya'],
-          'Selangor': ['selangor'],
-          'Penang': ['penang'],
-          'Johor': ['johor'],
-          'Melaka': ['melaka'],
-          'Sabah': ['sabah'],
-          'Sarawak': ['sarawak'],
-        };
         const stateNameMap: Record<string, string> = {
           'kuala-lumpur': 'Kuala Lumpur',
           'putrajaya': 'Kuala Lumpur',
@@ -31,6 +22,11 @@ export function TopHeader() {
           'melaka': 'Melaka',
           'sabah': 'Sabah',
           'sarawak': 'Sarawak',
+          'perlis': 'Perlis',
+          'kedah': 'Kedah',
+          'pahang': 'Pahang',
+          'terengganu': 'Terengganu',
+          'negeri-sembilan': 'Negeri Sembilan',
         };
         const mappedState = stateNameMap[selectedState] || selectedState;
         return locations.filter((l) => l.state === mappedState).length;

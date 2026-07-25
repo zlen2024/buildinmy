@@ -1,7 +1,8 @@
 "use client";
 
-import { useMapStore, ACTIVE_STATES, CATEGORY_CONFIG, type VenueCategory } from "@/lib/map-store";
+import { useMapStore, CATEGORY_CONFIG, type VenueCategory } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
+import { StateHeatmap } from "@/components/StateHeatmap";
 import {
   Map,
   Building2,
@@ -13,6 +14,8 @@ import {
   Heart,
   X,
   ChevronLeft,
+  Zap,
+  Trophy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,6 +26,8 @@ const NAV_ITEMS = [
   { id: "public_space", icon: Library, label: "Public" },
   { id: "coliving", icon: Home, label: "Co-living" },
   { id: "transport", icon: TrainFront, label: "Transport" },
+  { id: "leaderboard", icon: Zap, label: "Speed Rank" },
+  { id: "ranking", icon: Trophy, label: "Top 10" },
   { id: "stats", icon: BarChart3, label: "Stats" },
   { id: "favorites", icon: Heart, label: "Favorites" },
 ];
@@ -115,7 +120,7 @@ export function SidebarNav() {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 py-2.5 px-2.5 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 py-2.5 px-2.5 space-y-0.5 overflow-y-auto nav-scrollable">
           {NAV_ITEMS.map((item) => {
             const isActive = activeNavSection === item.id;
             const isCategoryActive = Object.keys(CATEGORY_CONFIG).includes(item.id)
@@ -177,44 +182,16 @@ export function SidebarNav() {
           })}
         </nav>
 
-        {/* State Quick Access (when sidebar is open) */}
+        {/* State Coverage Heatmap (when sidebar is open) */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="p-3 border-t border-[#e0c97f]/10 overflow-hidden"
+              className="overflow-hidden"
             >
-              <p className="text-[10px] font-semibold text-[#e0c97f]/30 uppercase tracking-widest mb-2.5 px-1">
-                Regions
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {ACTIVE_STATES.map((state) => {
-                  const count = locations.filter((l) => {
-                    const mapped = SLUG_TO_STATE_MAP[state.slug] || state.slug;
-                    return l.state === mapped;
-                  }).length;
-
-                  return (
-                    <button
-                      key={state.slug}
-                      onClick={() => setSelectedState(selectedState === state.slug ? null : state.slug)}
-                      className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-medium transition-all border",
-                        selectedState === state.slug
-                          ? "bg-[#e0c97f] text-[#0a0a0f] border-[#e0c97f] shadow-sm shadow-[#e0c97f]/20"
-                          : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/45 hover:bg-[#e0c97f]/10 hover:border-[#e0c97f]/15 hover:text-[#e0c97f]/70"
-                      )}
-                    >
-                      {state.name}
-                      {count > 0 && (
-                        <span className="ml-1 opacity-50">{count}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <StateHeatmap />
             </motion.div>
           )}
         </AnimatePresence>
@@ -245,4 +222,9 @@ const SLUG_TO_STATE_MAP: Record<string, string> = {
   'melaka': 'Melaka',
   'sabah': 'Sabah',
   'sarawak': 'Sarawak',
+  'perlis': 'Perlis',
+  'kedah': 'Kedah',
+  'pahang': 'Pahang',
+  'terengganu': 'Terengganu',
+  'negeri-sembilan': 'Negeri Sembilan',
 };

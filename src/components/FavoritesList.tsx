@@ -14,6 +14,7 @@ import {
   TrainFront,
   Phone,
   ThermometerSun,
+  MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -118,7 +119,7 @@ export function FavoritesList() {
                       <td className="p-1.5 text-[#e0c97f]/30 flex items-center gap-1"><Plug className="w-2.5 h-2.5" />Power</td>
                       {compareLocations.map((loc) => (
                         <td key={loc.id} className="p-1.5 text-center" style={{
-                          color: loc.workProfile?.powerOutlets === "high" ? "#22c55e" : "#e0c97f]/40"
+                          color: loc.workProfile?.powerOutlets === "high" ? "#22c55e" : "rgba(224, 201, 127, 0.4)"
                         }}>
                           {loc.workProfile?.powerOutlets || "—"}
                         </td>
@@ -128,7 +129,7 @@ export function FavoritesList() {
                       <td className="p-1.5 text-[#e0c97f]/30 flex items-center gap-1"><Volume2 className="w-2.5 h-2.5" />Noise</td>
                       {compareLocations.map((loc) => (
                         <td key={loc.id} className="p-1.5 text-center" style={{
-                          color: loc.workProfile?.noiseLevel === "quiet" || loc.workProfile?.noiseLevel === "silent" ? "#22c55e" : "#e0c97f]/40"
+                          color: loc.workProfile?.noiseLevel === "quiet" || loc.workProfile?.noiseLevel === "silent" ? "#22c55e" : "rgba(224, 201, 127, 0.4)"
                         }}>
                           {loc.workProfile?.noiseLevel || "—"}
                         </td>
@@ -143,12 +144,14 @@ export function FavoritesList() {
       </AnimatePresence>
 
       {/* Favorites list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto nav-scrollable">
         {favoriteLocations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <Heart className="w-8 h-8 text-[#e94560]/15 mb-3" />
-            <p className="text-sm text-[#e0c97f]/30">No saved venues yet</p>
-            <p className="text-xs text-[#e0c97f]/20 mt-1">Click the heart icon on any venue to save it here</p>
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#e94560]/10 to-[#e94560]/3 border border-[#e94560]/10 flex items-center justify-center mb-4">
+              <Heart className="w-7 h-7 text-[#e94560]/20" />
+            </div>
+            <p className="text-sm text-[#e0c97f]/40 font-medium">No saved venues yet</p>
+            <p className="text-xs text-[#e0c97f]/20 mt-1 max-w-[200px]">Click the heart icon on any venue to save it here for quick access</p>
           </div>
         ) : (
           <div className="divide-y divide-[#e0c97f]/5">

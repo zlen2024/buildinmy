@@ -225,10 +225,10 @@ export function CostExplorer() {
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
                 ))}
               </Bar>
-            </ResponsiveContainer>
+            </BarChart>
+          </ResponsiveContainer>
           </div>
         </motion.div>
-      </motion.div>
 
       {/* Average Day Pass Price - Horizontal Bar Chart */}
       <motion.div {...fadeIn} transition={{ duration: 0.4, delay: 0.2 }}>
