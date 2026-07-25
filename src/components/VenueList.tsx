@@ -54,14 +54,14 @@ export function VenueList() {
           <div className="p-4 space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-start gap-3">
-                <Skeleton className="w-10 h-10 rounded-lg bg-[#e0c97f]/5" />
+                <Skeleton className="w-10 h-10 rounded-lg shimmer" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3.5 w-3/4 rounded bg-[#e0c97f]/5" />
-                  <Skeleton className="h-2.5 w-1/2 rounded bg-[#e0c97f]/3" />
+                  <Skeleton className="h-3.5 w-3/4 rounded shimmer" />
+                  <Skeleton className="h-2.5 w-1/2 rounded shimmer" />
                   <div className="flex gap-3">
-                    <Skeleton className="h-2.5 w-16 rounded bg-[#e0c97f]/3" />
-                    <Skeleton className="h-2.5 w-10 rounded bg-[#e0c97f]/3" />
-                    <Skeleton className="h-2.5 w-14 rounded bg-[#e0c97f]/3" />
+                    <Skeleton className="h-2.5 w-16 rounded shimmer" />
+                    <Skeleton className="h-2.5 w-10 rounded shimmer" />
+                    <Skeleton className="h-2.5 w-14 rounded shimmer" />
                   </div>
                 </div>
               </div>
@@ -85,17 +85,19 @@ export function VenueList() {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-[#e0c97f]/5">
-            {filteredLocations.map((venue, index) => (
-              <VenueCard
-                key={venue.id}
-                venue={venue}
-                index={index}
-                onClick={() => setSelectedVenue(venue)}
-                isFavorite={favoriteIds.includes(venue.id)}
-                onToggleFavorite={() => toggleFavorite(venue.id)}
-              />
-            ))}
+          <div className="relative">
+            <div className="divide-y divide-[#e0c97f]/5">
+              {filteredLocations.map((venue, index) => (
+                <VenueCard
+                  key={venue.id}
+                  venue={venue}
+                  index={index}
+                  onClick={() => setSelectedVenue(venue)}
+                  isFavorite={favoriteIds.includes(venue.id)}
+                  onToggleFavorite={() => toggleFavorite(venue.id)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -122,7 +124,8 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
       whileHover={{ backgroundColor: "rgba(224, 201, 127, 0.04)" }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      className="w-full flex items-start gap-3 p-3.5 text-left transition-colors hover:bg-[#e0c97f]/4 group"
+      style={{ '--cat-color': categoryConfig.color } as React.CSSProperties}
+      className="w-full flex items-start gap-3 p-3.5 pl-[18px] text-left transition-all hover:bg-[#e0c97f]/4 group relative before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[2px] before:rounded-r-full before:bg-transparent group-hover:before:bg-[var(--cat-color)] before:transition-colors before:duration-300"
     >
       {/* Category icon */}
       <div
@@ -159,15 +162,15 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
           )}
 
           {venue.workProfile?.powerOutlets === "high" && (
-            <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#22c55e]/25 text-[#22c55e]/50 bg-[#22c55e]/5 h-3.5 leading-none">
-              <Plug className="w-2 h-2 mr-0.5" />
+            <Badge variant="outline" className="text-[8px] px-1.5 py-0.5 border-[#22c55e]/25 text-[#22c55e]/60 bg-[#22c55e]/5 h-4 leading-none gap-0.5">
+              <Plug className="w-2 h-2" />
               High
             </Badge>
           )}
 
           {venue.workProfile?.noiseLevel === "quiet" && (
-            <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#3b82f6]/25 text-[#3b82f6]/50 bg-[#3b82f6]/5 h-3.5 leading-none">
-              <Volume2 className="w-2 h-2 mr-0.5" />
+            <Badge variant="outline" className="text-[8px] px-1.5 py-0.5 border-[#3b82f6]/25 text-[#3b82f6]/60 bg-[#3b82f6]/5 h-4 leading-none gap-0.5">
+              <Volume2 className="w-2 h-2" />
               Quiet
             </Badge>
           )}
@@ -183,12 +186,16 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
 
       {/* Actions */}
       <div className="flex items-center gap-0.5 flex-shrink-0 mt-1">
-        <button
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-          className="p-1 rounded-md text-[#e0c97f]/15 hover:text-[#e94560] transition-colors"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleFavorite(); } }}
+          className="p-1 rounded-md text-[#e0c97f]/15 hover:text-[#e94560] transition-colors cursor-pointer"
         >
           <Heart className={cn("w-3.5 h-3.5", isFavorite && "fill-[#e94560] text-[#e94560]")} />
-        </button>
+        </div>
         <ChevronRight className="w-3.5 h-3.5 text-[#e0c97f]/10 group-hover:text-[#e0c97f]/25 transition-colors" />
       </div>
     </motion.button>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { createMalaysiaMap } from "krackedmaps";
 import "krackedmaps/css";
 import { useMapStore, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, SLUG_TO_STATE } from "@/lib/map-store";
+import type { LocationPin } from "@/lib/map-store";
 
 interface StateSelectPayload {
   state?: string;
@@ -23,6 +24,7 @@ export function MalaysiaMap() {
   const locations = useMapStore((s) => s.locations);
   const selectedState = useMapStore((s) => s.selectedState);
   const setSelectedState = useMapStore((s) => s.setSelectedState);
+  const setSelectedVenue = useMapStore((s) => s.setSelectedVenue);
 
   const [mapReady, setMapReady] = useState(false);
 
@@ -75,6 +77,15 @@ export function MalaysiaMap() {
     };
   }, []);
 
+  // Build a lookup map from venue ID → venue object (stable, avoids stale closures)
+  const venueById = useMemo(() => {
+    const map = new Map<string, LocationPin>();
+    for (const loc of locations) {
+      map.set(loc.id, loc);
+    }
+    return map;
+  }, [locations]);
+
   // Get locations for selected state
   const visibleLocations = selectedState
     ? locations.filter((loc) => {
@@ -82,6 +93,19 @@ export function MalaysiaMap() {
         return loc.state === mappedState;
       })
     : locations;
+
+  // Determine whether to abbreviate labels based on pin density
+  const shouldAbbreviate = !selectedState && visibleLocations.length > 8;
+
+  // Label resolver: full name when state-focused, abbreviated when too many pins
+  const getPinLabel = useCallback(
+    (loc: LocationPin): string => {
+      if (!shouldAbbreviate) return loc.name;
+      // Use area name (shorter, reduces overlap) — fall back to truncated name
+      return loc.area.length <= 15 ? loc.area : loc.area.slice(0, 15) + '…';
+    },
+    [shouldAbbreviate],
+  );
 
   // Update pins when locations or state changes
   const updatePins = useCallback(() => {
@@ -94,13 +118,13 @@ export function MalaysiaMap() {
     });
     pinsRef.current.clear();
 
-    // Add filtered location pins
+    // Add filtered location pins with label optimization
     for (const loc of visibleLocations) {
       try {
         const pinId = map.addPin({
           lng: loc.longitude,
           lat: loc.latitude,
-          label: loc.name,
+          label: getPinLabel(loc),
           id: loc.id,
         });
         pinsRef.current.set(loc.id, pinId);
@@ -108,11 +132,35 @@ export function MalaysiaMap() {
         // Skip pins outside bounds
       }
     }
-  }, [visibleLocations, mapReady]);
+  }, [visibleLocations, mapReady, getPinLabel]);
 
   useEffect(() => {
     updatePins();
   }, [updatePins]);
+
+  // Pin click handler — krackedmaps has no pinClick event, so we use DOM delegation
+  // Pins are rendered as <g class="pin" data-id="venueId"> in the SVG
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+
+    const handlePinClick = (e: MouseEvent) => {
+      const pinEl = (e.target as Element).closest('.pin');
+      if (!pinEl) return;
+
+      const venueId = pinEl.getAttribute('data-id');
+      if (!venueId) return;
+
+      const venue = venueById.get(venueId);
+      if (venue) {
+        setSelectedVenue(venue);
+      }
+    };
+
+    mapInstanceRef.current.root.addEventListener('click', handlePinClick);
+    return () => {
+      mapInstanceRef.current?.root.removeEventListener('click', handlePinClick);
+    };
+  }, [mapReady, venueById, setSelectedVenue]);
 
   // Focus on state when selected
   useEffect(() => {

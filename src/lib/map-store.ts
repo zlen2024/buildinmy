@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { Locale } from '@/lib/i18n'
 
 export type VenueCategory = 'coworking' | 'cafe' | 'public_space' | 'coliving'
 export type PowerDensity = 'high' | 'moderate' | 'sparse' | 'none'
@@ -72,6 +73,8 @@ interface MapState {
   favoriteIds: string[]
   // Comparison list
   compareIds: string[]
+  // Locale for i18n
+  locale: Locale
 
   // Actions
   setSelectedState: (state: string | null) => void
@@ -94,6 +97,8 @@ interface MapState {
   toggleCompare: (id: string) => void
   isCompared: (id: string) => boolean
   clearCompare: () => void
+  // Locale action
+  setLocale: (locale: Locale) => void
 }
 
 const defaultFilters = {
@@ -123,6 +128,7 @@ export const useMapStore = create<MapState>()(
       activeNavSection: 'map',
       favoriteIds: [],
       compareIds: [],
+      locale: 'en' as Locale,
 
       setSelectedState: (state) => set({ selectedState: state }),
       setSelectedDistrict: (district) => set({ selectedDistrict: district }),
@@ -163,12 +169,14 @@ export const useMapStore = create<MapState>()(
         }),
       isCompared: (id) => get().compareIds.includes(id),
       clearCompare: () => set({ compareIds: [] }),
+      setLocale: (locale) => set({ locale }),
     }),
     {
       name: 'nomadmy-storage',
       partialize: (state) => ({
         favoriteIds: state.favoriteIds,
         sidebarOpen: state.sidebarOpen,
+        locale: state.locale,
       }),
     }
   )

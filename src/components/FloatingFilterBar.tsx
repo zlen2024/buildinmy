@@ -1,6 +1,6 @@
 "use client";
 
-import { useMapStore, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, SLUG_TO_STATE, type VenueCategory } from "@/lib/map-store";
+import { useMapStore, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, SLUG_TO_STATE, useFilteredLocations, type VenueCategory } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -71,19 +71,21 @@ export function FloatingFilterBar() {
     callFriendly ||
     selectedState !== null;
 
-  // Count venues matching current filters
-  const filteredCount = (() => {
-    if (selectedState) {
-      const mappedState = SLUG_TO_STATE[selectedState] || selectedState;
-      return locations.filter((l) => l.state === mappedState).length;
-    }
-    return locations.length;
-  })();
+  // Live filtered count from the actual filter selector
+  const filteredLocations = useFilteredLocations();
+  const filteredCount = filteredLocations.length;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+      className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
+    >
       <div className="max-w-5xl mx-auto p-3 sm:p-4">
-        <div className="pointer-events-auto bg-[#0d1b2a]/95 backdrop-blur-2xl border border-[#e0c97f]/12 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="pointer-events-auto bg-[#0d1b2a]/95 backdrop-blur-2xl border border-[#e0c97f]/12 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative">
+          {/* Gradient top border accent */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/40 to-transparent" />
           {/* Search row */}
           <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3">
             <div ref={searchRef} className="relative flex-1">
@@ -97,7 +99,7 @@ export function FloatingFilterBar() {
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#e0c97f]/5 border border-[#e0c97f]/10 rounded-xl text-sm text-[#e0c97f] placeholder:text-[#e0c97f]/25 focus:outline-none focus:border-[#e0c97f]/25 focus:bg-[#e0c97f]/8 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#e0c97f]/5 border border-[#e0c97f]/10 rounded-xl text-sm text-[#e0c97f] placeholder:text-[#e0c97f]/25 focus:outline-none focus:border-[#e0c97f]/25 focus:bg-[#e0c97f]/8 focus:shadow-[0_0_0_3px_rgba(224,201,127,0.08)] transition-all"
               />
               {searchQuery && (
                 <button
@@ -145,7 +147,7 @@ export function FloatingFilterBar() {
               className={cn(
                 "p-2.5 rounded-xl border transition-all flex-shrink-0",
                 hasActiveFilters
-                  ? "bg-[#e0c97f]/15 border-[#e0c97f]/25 text-[#e0c97f]"
+                  ? "bg-[#e0c97f]/15 border-[#e0c97f]/25 text-[#e0c97f] pulse-gold"
                   : "bg-[#e0c97f]/5 border-[#e0c97f]/8 text-[#e0c97f]/40 hover:text-[#e0c97f]/70"
               )}
             >
@@ -270,7 +272,7 @@ export function FloatingFilterBar() {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

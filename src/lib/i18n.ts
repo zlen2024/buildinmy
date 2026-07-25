@@ -1,0 +1,215 @@
+type Locale = 'en' | 'bm';
+
+const translations: Record<Locale, Record<string, string>> = {
+  en: {
+    // Navigation
+    'nav.map': 'Map',
+    'nav.workspaces': 'Workspaces',
+    'nav.cafes': 'Cafes',
+    'nav.public': 'Public',
+    'nav.coliving': 'Co-living',
+    'nav.transport': 'Transport',
+    'nav.speedRank': 'Speed Rank',
+    'nav.top10': 'Top 10',
+    'nav.stats': 'Stats',
+    'nav.favorites': 'Favorites',
+    // Filter bar
+    'filter.search': 'Search places, areas, states...',
+    'filter.filters': 'Filters',
+    'filter.reset': 'Reset',
+    'filter.minWifi': 'Min Wi-Fi Speed',
+    'filter.highSocket': 'High Socket Density',
+    'filter.quiet': 'Quiet Environment',
+    'filter.callFriendly': 'Call Friendly',
+    'filter.productivity': 'Productivity Filters',
+    'filter.any': 'Any',
+    'filter.places': 'places',
+    // Venue list
+    'venues.title': 'Venues',
+    'venues.results': 'results',
+    'venues.noVenues': 'No venues found',
+    'venues.noVenuesDesc': 'Try adjusting your filters or search query to find work-friendly spaces',
+    'venues.clearFilters': 'Clear Filters',
+    'venues.loading': 'Loading venues across Malaysia...',
+    // Venue drawer
+    'drawer.wifiSpeed': 'Wi-Fi Speed',
+    'drawer.mbps': 'Mbps avg download',
+    'drawer.slow': 'Slow',
+    'drawer.good': 'Good',
+    'drawer.excellent': 'Excellent',
+    'drawer.costIndex': 'Cost Index',
+    'drawer.coffee': 'Coffee',
+    'drawer.dayPass': 'Day Pass',
+    'drawer.minSpend': 'Min Spend',
+    'drawer.transit': 'Nearest Transit',
+    'drawer.walk': 'walk',
+    'drawer.googleMaps': 'Open in Google Maps',
+    'drawer.powerOutlets': 'Power Outlets',
+    'drawer.noiseLevel': 'Noise Level',
+    'drawer.seating': 'Seating',
+    'drawer.laptopPolicy': 'Laptop Policy',
+    'drawer.airCon': 'Air Con',
+    'drawer.callFriendly': 'Call Friendly',
+    'drawer.yes': 'Yes',
+    'drawer.no': 'No',
+    'drawer.none': 'None',
+    // Categories
+    'cat.coworking': 'Coworking',
+    'cat.workCafe': 'Work Cafe',
+    'cat.publicSpace': 'Public Space',
+    'cat.coliving': 'Co-living',
+    // Favorites
+    'fav.title': 'Saved Venues',
+    'fav.empty': 'No saved venues yet',
+    'fav.emptyDesc': 'Click the heart icon on any venue to save it here for quick access',
+    'fav.compare': 'Compare',
+    'fav.clear': 'Clear',
+    // Stats
+    'stats.totalVenues': 'Total Venues',
+    'stats.avgWifi': 'Avg Wi-Fi',
+    'stats.avgRating': 'Avg Rating',
+    'stats.states': 'States',
+    // Heatmap
+    'heatmap.coverage': 'Coverage',
+    'heatmap.less': 'Less',
+    'heatmap.more': 'More',
+    // Leaderboard
+    'lb.title': 'Wi-Fi Speed Leaderboard',
+    'lb.topVenues': 'Top Venues Ranking',
+    // Welcome
+    'welcome.badge': 'Nomad Workspace Finder',
+    'welcome.title': 'Welcome to NomadMY',
+    'welcome.subtitle': 'Your interactive guide to work-friendly spaces across Malaysia',
+    'welcome.feature1Title': 'Interactive Malaysia Map',
+    'welcome.feature1Desc': 'Click states to explore venues',
+    'welcome.feature2Title': 'Verified Wi-Fi Speeds',
+    'welcome.feature2Desc': 'Real speed test data from nomads',
+    'welcome.feature3Title': 'Cost Index',
+    'welcome.feature3Desc': 'Coffee prices, day passes & more',
+    'welcome.cta': 'Start Exploring',
+    'welcome.hint': 'Press F to toggle this panel anytime',
+    // Header
+    'header.malaysia': 'Malaysia',
+    'header.venues': 'venues',
+    // Keyboard
+    'kb.search': 'Search',
+    'kb.close': 'Close',
+    'kb.panel': 'Panel',
+    // Legend
+    'legend.title': 'Legend',
+    'legend.inView': 'venues in view',
+    // Export
+    'export.title': 'Export',
+    'export.csv': 'Export CSV',
+    'export.success': 'Exported successfully!',
+  },
+  bm: {
+    // Navigation
+    'nav.map': 'Peta',
+    'nav.workspaces': 'Ruang Kerja',
+    'nav.cafes': 'Kafe',
+    'nav.public': 'Awam',
+    'nav.coliving': 'Kongsi Hidup',
+    'nav.transport': 'Pengangkutan',
+    'nav.speedRank': 'Kedudukan Kelajuan',
+    'nav.top10': 'Top 10',
+    'nav.stats': 'Statistik',
+    'nav.favorites': 'Kegemaran',
+    // Filter bar
+    'filter.search': 'Cari tempat, kawasan, negeri...',
+    'filter.filters': 'Penapis',
+    'filter.reset': 'Set Semula',
+    'filter.minWifi': 'Kelajuan Wi-Fi Minimum',
+    'filter.highSocket': 'Ketumpatan Soket Tinggi',
+    'filter.quiet': 'Persekitaran Senyap',
+    'filter.callFriendly': 'Mesra Panggilan',
+    'filter.productivity': 'Penapis Produktiviti',
+    'filter.any': 'Semua',
+    'filter.places': 'tempat',
+    // Venue list
+    'venues.title': 'Tempat',
+    'venues.results': 'keputusan',
+    'venues.noVenues': 'Tiada tempat ditemui',
+    'venues.noVenuesDesc': 'Cuba laraskan penapis atau pertanyaan carian untuk mencari ruang mesra kerja',
+    'venues.clearFilters': 'Padam Penapis',
+    'venues.loading': 'Memuatkan tempat di seluruh Malaysia...',
+    // Venue drawer
+    'drawer.wifiSpeed': 'Kelajuan Wi-Fi',
+    'drawer.mbps': 'Mbps muat turun purata',
+    'drawer.slow': 'Perlahan',
+    'drawer.good': 'Baik',
+    'drawer.excellent': 'Cemerlang',
+    'drawer.costIndex': 'Indeks Kos',
+    'drawer.coffee': 'Kopi',
+    'drawer.dayPass': 'Harian',
+    'drawer.minSpend': 'Min Belanja',
+    'drawer.transit': 'Pengangkutan Terdekat',
+    'drawer.walk': 'jalan kaki',
+    'drawer.googleMaps': 'Buka di Google Maps',
+    'drawer.powerOutlets': 'Soket Kuasa',
+    'drawer.noiseLevel': 'Tahap Bunyi',
+    'drawer.seating': 'Tempat Duduk',
+    'drawer.laptopPolicy': 'Polisi Laptop',
+    'drawer.airCon': 'Penyaman Udara',
+    'drawer.callFriendly': 'Mesra Panggilan',
+    'drawer.yes': 'Ya',
+    'drawer.no': 'Tidak',
+    'drawer.none': 'Tiada',
+    // Categories
+    'cat.coworking': 'Berkongsi Ruang',
+    'cat.workCafe': 'Kafe Kerja',
+    'cat.publicSpace': 'Ruang Awam',
+    'cat.coliving': 'Kongsi Hidup',
+    // Favorites
+    'fav.title': 'Tempat Simpan',
+    'fav.empty': 'Tiada tempat simpan lagi',
+    'fav.emptyDesc': 'Klik ikon hati pada mana-mana tempat untuk menyimpannya di sini',
+    'fav.compare': 'Bandingan',
+    'fav.clear': 'Padam',
+    // Stats
+    'stats.totalVenues': 'Jumlah Tempat',
+    'stats.avgWifi': 'Purata Wi-Fi',
+    'stats.avgRating': 'Purata Penilaian',
+    'stats.states': 'Negeri',
+    // Heatmap
+    'heatmap.coverage': 'Liputan',
+    'heatmap.less': 'Kurang',
+    'heatmap.more': 'Lebih',
+    // Leaderboard
+    'lb.title': 'Kedudukan Kelajuan Wi-Fi',
+    'lb.topVenues': 'Kedudukan Tempat Teratas',
+    // Welcome
+    'welcome.badge': 'Pencari Ruang Kerja Nomad',
+    'welcome.title': 'Selamat Datang ke NomadMY',
+    'welcome.subtitle': 'Panduan interaktif anda ke ruang kerja mesra di seluruh Malaysia',
+    'welcome.feature1Title': 'Peta Malaysia Interaktif',
+    'welcome.feature1Desc': 'Klik negeri untuk menerokai tempat',
+    'welcome.feature2Title': 'Kelajuan Wi-Fi Sah',
+    'welcome.feature2Desc': 'Data ujian kelajuan sebenar dari nomad',
+    'welcome.feature3Title': 'Indeks Kos',
+    'welcome.feature3Desc': 'Harga kopi, pas harian & lagi',
+    'welcome.cta': 'Mula Menerokai',
+    'welcome.hint': 'Tekan F untuk togol panel ini bila-bila masa',
+    // Header
+    'header.malaysia': 'Malaysia',
+    'header.venues': 'tempat',
+    // Keyboard
+    'kb.search': 'Cari',
+    'kb.close': 'Tutup',
+    'kb.panel': 'Panel',
+    // Legend
+    'legend.title': 'Legenda',
+    'legend.inView': 'tempat dalam pandangan',
+    // Export
+    'export.title': 'Eksport',
+    'export.csv': 'Eksport CSV',
+    'export.success': 'Dieksport dengan berjaya!',
+  }
+};
+
+export type { Locale };
+export { translations };
+
+export function t(key: string, locale: Locale = 'en'): string {
+  return translations[locale]?.[key] || translations.en[key] || key;
+}

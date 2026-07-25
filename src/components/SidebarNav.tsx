@@ -1,6 +1,7 @@
 "use client";
 
 import { useMapStore, CATEGORY_CONFIG, type VenueCategory } from "@/lib/map-store";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { StateHeatmap } from "@/components/StateHeatmap";
 import {
@@ -16,8 +17,28 @@ import {
   ChevronLeft,
   Zap,
   Trophy,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+
+// Map nav IDs to i18n keys (full key with prefix)
+function getNavItemLabel(id: string, locale: 'en' | 'bm'): string {
+  const keyMap: Record<string, string> = {
+    map: 'nav.map',
+    coworking: 'nav.workspaces',
+    cafe: 'nav.cafes',
+    public_space: 'nav.public',
+    coliving: 'nav.coliving',
+    transport: 'nav.transport',
+    leaderboard: 'nav.speedRank',
+    ranking: 'nav.top10',
+    stats: 'nav.stats',
+    export: 'export.title',
+    favorites: 'nav.favorites',
+  };
+  return t(keyMap[id] || id, locale);
+}
 
 const NAV_ITEMS = [
   { id: "map", icon: Map, label: "Map" },
@@ -29,6 +50,7 @@ const NAV_ITEMS = [
   { id: "leaderboard", icon: Zap, label: "Speed Rank" },
   { id: "ranking", icon: Trophy, label: "Top 10" },
   { id: "stats", icon: BarChart3, label: "Stats" },
+  { id: "export", icon: Download, label: "Export", isAction: true },
   { id: "favorites", icon: Heart, label: "Favorites" },
 ];
 
@@ -43,6 +65,7 @@ export function SidebarNav() {
   const setActiveNavSection = useMapStore((s) => s.setActiveNavSection);
   const favoriteIds = useMapStore((s) => s.favoriteIds);
   const locations = useMapStore((s) => s.locations);
+  const locale = useMapStore((s) => s.locale);
 
   const handleNavClick = (id: string) => {
     if (id === "map") {
@@ -51,6 +74,25 @@ export function SidebarNav() {
       toggleCategory(id as VenueCategory);
     }
     setActiveNavSection(id);
+  };
+
+  const handleExport = async () => {
+    try {
+      const res = await fetch('/api/export');
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nomadmy-venues.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(t('export.success', locale));
+    } catch {
+      toast.error('Failed to export venues');
+    }
   };
 
   return (
@@ -130,10 +172,12 @@ export function SidebarNav() {
             // Show favorite count badge
             const showFavBadge = item.id === "favorites" && favoriteIds.length > 0;
 
+            const isExportAction = item.id === "export";
+
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
+                onClick={() => isExportAction ? handleExport() : handleNavClick(item.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative",
                   isActive || isCategoryActive
@@ -158,7 +202,7 @@ export function SidebarNav() {
                       exit={{ opacity: 0, width: 0 }}
                       className="text-sm font-medium truncate overflow-hidden"
                     >
-                      {item.label}
+                      {getNavItemLabel(item.id, locale)}
                     </motion.span>
                   )}
                 </AnimatePresence>

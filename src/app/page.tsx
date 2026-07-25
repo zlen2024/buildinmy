@@ -17,7 +17,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 
-export default function HomePage() {
+function HomePage() {
   const setLocations = useMapStore((s) => s.setLocations);
   const setIsLoading = useMapStore((s) => s.setIsLoading);
   const isLoading = useMapStore((s) => s.isLoading);
