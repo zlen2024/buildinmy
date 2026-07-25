@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createMalaysiaMap } from "krackedmaps";
 import "krackedmaps/css";
 import { useMapStore, STATE_DISPLAY_NAMES, CATEGORY_CONFIG, SLUG_TO_STATE } from "@/lib/map-store";
@@ -186,13 +187,13 @@ export function MalaysiaMap() {
         <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-[#0a0a0f]/90 to-transparent" />
       </div>
 
-      {/* Floating legend */}
-      <div className="absolute top-20 right-4 bg-[#0d1b2a]/90 backdrop-blur-md border border-[#e0c97f]/20 rounded-xl p-4 pointer-events-auto shadow-lg shadow-black/20 min-w-[140px]">
+      {/* Floating legend — glass-card enhanced */}
+      <div className="absolute top-20 right-4 glass-card p-4 pointer-events-auto min-w-[140px]">
         <p className="text-[10px] text-[#e0c97f]/50 mb-3 font-semibold uppercase tracking-widest">Legend</p>
         <div className="space-y-2">
           {(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; emoji: string }][]).map(([key, cfg]) => (
             <div key={key} className="flex items-center gap-2.5 min-w-0">
-              <div className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-xs" style={{ backgroundColor: cfg.color + '20' }}>
+              <div className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-xs card-hover-lift" style={{ backgroundColor: cfg.color + '20' }}>
                 {cfg.emoji}
               </div>
               <span className="text-[11px] text-[#e0c97f]/70 whitespace-nowrap truncate">{cfg.label}</span>
@@ -200,24 +201,46 @@ export function MalaysiaMap() {
           ))}
         </div>
 
-        {/* Venue count in view */}
+        {/* Animated venue count in view */}
         <div className="mt-3 pt-3 border-t border-[#e0c97f]/10">
           <p className="text-[10px] text-[#e0c97f]/30 whitespace-nowrap">
-            {venueCount} venue{venueCount !== 1 ? "s" : ""} in view
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={venueCount}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                className="inline-block font-semibold text-[#e0c97f]/50"
+              >
+                {venueCount}
+              </motion.span>
+            </AnimatePresence>{" "}
+            venue{venueCount !== 1 ? "s" : ""} in view
           </p>
         </div>
       </div>
 
-      {/* State name overlay */}
-      {selectedState && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none">
-          <div className="bg-[#0d1b2a]/80 backdrop-blur-md border border-[#e0c97f]/30 rounded-full px-5 py-2 shadow-lg">
-            <p className="text-[#e0c97f] font-semibold text-sm tracking-wide">
-              {STATE_DISPLAY_NAMES[selectedState] || selectedState.replace(/-/g, " ")}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* State name overlay — animated with gold glow */}
+      <AnimatePresence>
+        {selectedState && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none"
+          >
+            <div className="bg-[#0d1b2a]/80 backdrop-blur-md border border-[#e0c97f]/30 rounded-full px-5 py-2 shadow-lg"
+              style={{ boxShadow: '0 0 20px rgba(224,201,127,0.08)' }}
+            >
+              <p className="text-[#e0c97f] font-semibold text-sm tracking-wide gold-gradient-text">
+                {STATE_DISPLAY_NAMES[selectedState] || selectedState.replace(/-/g, " ")}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

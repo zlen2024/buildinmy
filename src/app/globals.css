@@ -368,3 +368,95 @@
   background-repeat: repeat;
   background-size: 256px 256px;
 }
+
+/* ============================================================
+   Enhanced Animations & Utility Classes (Task 6-a)
+   ============================================================ */
+
+/* Aurora gradient animation for hero areas */
+@keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) saturate(1);
+  }
+  33% {
+    background-position: 100% 50%;
+    filter: hue-rotate(15deg) saturate(1.2);
+  }
+  66% {
+    background-position: 50% 100%;
+    filter: hue-rotate(-10deg) saturate(0.9);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) saturate(1);
+  }
+}
+
+/* Fade slide up for staggered card entrances */
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in with opacity for pop-in elements */
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Subtle box-shadow pulse for active elements */
+@keyframes borderGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(224, 201, 127, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(224, 201, 127, 0.05);
+  }
+}
+
+/* Aurora background utility class */
+.aurora-bg {
+  background: linear-gradient(135deg, #0a0a0f 0%, #0d1b2a 30%, #1a1a2e 60%, #0a0a0f 100%);
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+}
+
+/* Card hover lift effect */
+.card-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile touch feedback */
+.touch-feedback {
+  transition-transform: 150ms ease;
+}
+.touch-feedback:active {
+  transform: scale(0.98);
+}
+
+/* Gold gradient text */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #e0c97f, #f5e6b8, #e0c97f);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 200% auto;
+  animation: shimmer 3s ease-in-out infinite;
+}

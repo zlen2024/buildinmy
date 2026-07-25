@@ -1,0 +1,653 @@
+     1→# NomadMY — Work Log
+     2→
+     3→## Task 4a-4b — i18n System & CSV Export Feature
+     4→
+     5→### Objective
+     6→Implement a functional i18n system (English / Bahasa Melayu) and CSV export feature for the NomadMY digital nomad workspace finder.
+     7→
+     8→### Files Created
+     9→1. **`src/lib/i18n.ts`** — Complete i18n translation system
+    10→2. **`src/app/api/export/route.ts`** — CSV export API endpoint
+    11→
+    12→### Files Modified
+    13→1. **`src/lib/map-store.ts`** — Added `locale: Locale` state, `setLocale` action, locale persistence
+    14→2. **`src/components/TopHeader.tsx`** — Functional language toggle with AnimatePresence dropdown
+    15→3. **`src/components/SidebarNav.tsx`** — Export CSV button, i18n-aware nav labels
+    16→
+    17→### Part 1: i18n System
+    18→
+    19→#### `src/lib/i18n.ts`
+    20→- Created `Locale` type: `'en' | 'bm'`
+    21→- Built `translations` record with 90+ translation keys covering:
+    22→  - Navigation labels (Map, Workspaces, Cafes, Public, Co-living, Transport, Speed Rank, Top 10, Stats, Favorites)
+    23→  - Filter bar labels (search placeholder, filter toggles, productivity filters)
+    24→  - Venue list states (loading, no venues, empty states)
+    25→  - Venue drawer details (Wi-Fi speed, cost index, transit, amenities)
+    26→  - Category names (Coworking, Work Cafe, Public Space, Co-living)
+    27→  - Favorites (title, empty states, compare/clear)
+    28→  - Stats panel labels
+    29→  - Heatmap legend
+    30→  - Leaderboard titles
+    31→  - Welcome overlay (badge, title, subtitle, feature cards, CTA, hint)
+    32→  - Header labels (Malaysia, venues)
+    33→  - Keyboard shortcuts
+    34→  - Export labels
+    35→- Exported `t(key, locale)` function with fallback chain: `locale → en → raw key`
+    36→
+    37→#### `src/lib/map-store.ts`
+    38→- Added `import type { Locale } from '@/lib/i18n'`
+    39→- Added `locale: Locale` to `MapState` interface (default: `'en'`)
+    40→- Added `setLocale: (locale: Locale) => void` action
+    41→- Persisted `locale` in `partialize` function so language preference survives page reloads
+    42→
+    43→#### `src/components/TopHeader.tsx`
+    44→- Replaced static language dropdown with functional AnimatePresence-powered dropdown
+    45→- Active language shown with gold dot indicator and "Active" label
+    46→- Click-away backdrop to dismiss dropdown
+    47→- Animated entrance/exit (fade + scale + y-offset)
+    48→- Localized "Malaysia" and "venues" labels in header badges using `t()` function
+    49→- Shows locale code (EN/BM) on larger screens
+    50→
+    51→#### `src/components/SidebarNav.tsx`
+    52→- Added `t` import from i18n and `Download` icon from lucide-react
+    53→- Added `getNavItemLabel()` helper that maps nav IDs to full i18n keys
+    54→- All nav item labels now use `getNavItemLabel()` for localization
+    55→- Added Export nav item (Download icon) between Stats and Favorites
+    56→
+    57→### Part 2: CSV Export Feature
+    58→
+    59→#### `src/app/api/export/route.ts`
+    60→- GET endpoint that fetches all operational venues from Prisma
+    61→- Includes related data: workProfile, venueCost, wifiMetrics
+    62→- Calculates average Wi-Fi download speed per venue
+    63→- Returns CSV with columns: Name, Category, State, Area, Latitude, Longitude, Wi-Fi Speed (Mbps), Rating, Coffee Price (MYR), Day Pass (MYR), Power Outlets, Noise Level
+    64→- Sets `Content-Type: text/csv; charset=utf-8` and `Content-Disposition: attachment; filename="nomadmy-venues.csv"`
+    65→- CSV values properly escaped with double-quote wrapping
+    66→- Error handling with 500 status code
+    67→
+    68→#### `src/components/SidebarNav.tsx` (Export Integration)
+    69→- Export nav item triggers `handleExport()` async function
+    70→- Creates blob URL from API response, triggers browser download
+    71→- Shows `toast.success()` with localized "Exported successfully!" message
+    72→- Shows `toast.error()` on failure
+    73→- Cleanup: revokes blob URL and removes temporary anchor element
+    74→
+    75→### Verification
+    76→- ✅ Lint passes clean (0 errors, 0 warnings)
+    77→- ✅ Server compiles successfully
+    78→- ✅ All new files created, all modified files preserved
+    79→
+    80→---
+    81→
+    82→## Project Overview
+    83→NomadMY is an interactive, full-viewport spatial dashboard for digital nomads in Malaysia. It features a krackedmaps-based interactive map of Malaysia, venue markers for coworking spaces/cafes/public spaces, filtering by Wi-Fi speed, power outlets, noise level, and more.
+    84→
+    85→---
+    86→
+    87→## Phase 2 — Review & Enhancement Round
+    88→
+    89→### Assessment of Phase 1
+    90→Phase 1 was functionally complete with:
+    91→- 25 seeded Malaysian locations across 7 states
+    92→- Full krackedmaps integration with custom dark theme
+    93→- Sidebar nav, floating filter bar, venue drawer, venue list, stats panel
+    94→- Zustand state management with filtering
+    95→- 3 API endpoints (places, places/[id], stats)
+    96→- Clean lint (0 errors)
+    97→
+    98→### Issues Identified & Fixed
+    99→
+   100→1. **Cross-origin warning** (`allowedDevOrigins`)
+   101→   - Fixed in `next.config.ts` by adding the preview domain to `allowedDevOrigins`
+   102→
+   103→2. **Unused imports** in `MalaysiaMap.tsx`
+   104→   - Removed unused lucide-react imports (Building2, Coffee, Library, Home)
+   105→
+   106→3. **No loading state** for venue list
+   107→   - Added Skeleton-based loading state with 5 placeholder rows
+   108→   - List items now animate in sequentially with staggered delays
+   109→
+   110→4. **No error toast** for API failures
+   111→   - Added `toast.error()` notification when venue fetch fails
+   112→
+   113→5. **No favorites/compare functionality**
+   114→   - Added full favorites system with localStorage persistence via `zustand/persist`
+   115→   - Compare tray shows side-by-side comparison of up to 3 venues (Wi-Fi, coffee, day pass, rating, power, noise)
+   116→
+   117→6. **No keyboard shortcuts**
+   118→   - `Esc` — Close drawer or sidebar
+   119→   - `/` — Focus search input
+   120→   - `F` — Toggle sidebar panel
+   121→
+   122→### New Features Added
+   123→
+   124→1. **Favorites System**
+   125→   - Heart button on venue list items and venue drawer
+   126→   - Dedicated "Favorites" nav section with badge count
+   127→   - Persisted to localStorage via zustand persist middleware
+   128→   - `FavoritesList.tsx` component with compare tray
+   129→
+   130→2. **Venue Comparison**
+   131→   - Compare button (GitCompareArrows icon) on venues and drawer
+   132→   - Up to 3 venues can be compared simultaneously
+   133→   - Comparison table shows: Wi-Fi speed, coffee price, day pass, Google rating, power outlets, noise level
+   134→   - Color-coded metrics (green for good, amber for moderate, red for poor)
+   135→
+   136→3. **Enhanced Sidebar Animations**
+   137→   - Active nav indicator line (layoutId animation)
+   138→   - Animated text reveal on sidebar open/close
+   139→   - Favorites badge with pulse animation
+   140→   - Region pills show venue counts
+   141→
+   142→4. **Enhanced Filter Bar**
+   143→   - Animated search suggestions dropdown with venue details
+   144→   - Clear search button (X) in input
+   145→   - Animated filter expansion panel
+   146→   - Better filter chip styling with colored borders
+   147→   - Clear visual feedback with result counts
+   148→
+   149→5. **Enhanced Venue Drawer**
+   150→   - Favorite heart button (toggle save)
+   151→   - Compare button (add to comparison)
+   152→   - Close/clear compare from Favorites panel
+   153→
+   154→6. **Loading UX**
+   155→   - Skeleton loading state for venue list (5 rows)
+   156→   - Pulsing ring animation around spinner
+   157→   - Descriptive loading text
+   158→
+   159→7. **Keyboard Shortcut Hints**
+   160→   - Subtle keyboard hints at bottom-left on desktop
+   161→   - `/`, `Esc`, `F` shortcuts
+   162→
+   163→### Styling Improvements
+   164→
+   165→- Sidebar: Active nav line indicator, animated logo, better spacing
+   166→- Filter bar: Rounded-2xl corners, subtle animations, better suggestion dropdown with venue details
+   167→- Venue list: Sequential entrance animations, better metric badges, more compact layout
+   168→- Map legend: Better styling with venue count, emoji in colored boxes
+   169→- Drawer: Additional action buttons with proper hover states
+   170→- Favorites list: Empty state with instructions, compare tray design
+   171→
+   172→### Verification
+   173→- ✅ Lint passes clean (0 errors, 0 warnings)
+   174→- ✅ Server compiles successfully
+   175→- ✅ Page returns HTTP 200
+   176→- ✅ API returns 25 locations with full data
+   177→- ✅ All new features integrated into existing layout
+   178→
+   179→---
+   180→
+   181→## Phase 1 — Original Build (Summary)
+   182→
+   183→### Completed Tasks
+   184→1. **Database Schema** — Prisma + SQLite with Location, WorkProfile, WifiMetric, VenueCost, TransitAccess
+   185→2. **Seed Data** — 25 venues across KL (9), Penang (5), Selangor (3), Johor (3), Melaka (2), Sabah (2), Sarawak (1)
+   186→3. **krackedmaps Integration** — Custom dark theme, pin markers, state selection, focus
+   187→4. **API Endpoints** — GET /api/places, GET /api/places/[id], GET /api/stats
+   188→5. **UI Components** — MalaysiaMap, SidebarNav, TopHeader, FloatingFilterBar, VenueDrawer, VenueList, StatsPanel
+   189→6. **Zustand Store** — Full state management with filtering, selections, categories
+   190→7. **Design System** — Dark theme (#0a0a0f / #0d1b2a / #e0c97f gold), responsive, Framer Motion
+   191→
+   192→### Tech Stack
+   193→- Next.js 16 (App Router), TypeScript, Tailwind CSS 4, shadcn/ui (46 components)
+   194→- krackedmaps, Zustand (persist), Prisma (SQLite), Framer Motion
+   195→
+   196→---
+   197→
+   198→## Unresolved Issues / Next Phase Recommendations
+   199→
+   200→1. **East Malaysia rendering** — krackedmaps focuses on Peninsular Malaysia; Sabah/Sarawak pins may not render. Consider an inset mini-map or iframe fallback for East Malaysia.
+   201→
+   202→2. **Google Maps verification pipeline** — Backend Google Places verification not yet implemented. Currently uses pre-seeded Google Place IDs.
+   203→
+   204→3. **Agent-browser connectivity** — `agent-browser` cannot connect to localhost:3000 in this environment (connection refused on agent-browser side despite curl working). This may be a network namespace issue with the browser.
+   205→
+   206→4. **Additional features to build:**
+   207→   - Wi-Fi speedtest mini-service
+   208→   - User authentication (NextAuth)
+   209→   - Venue submission flow with admin approval
+   210→   - Transit proximity auto-calculation
+   211→   - Community reviews/ratings system
+   212→   - Map marker clustering
+   213→   - Export venue data as PDF/CSV
+   214→   - Mobile PWA support
+   215→
+   216→5. **Polish opportunities:**
+   217→   - Animated map pin placement
+   218→   - Drill-down to district level
+   219→   - Drag-and-drop comparison reordering
+   220→   - Dark/light theme fully working (currently defaults dark)
+   221→   - i18n support (English/Bahasa Melayu toggle exists but is non-functional)
+   222→
+   223→---
+   224→
+   225→## Phase 3 — Welcome Overlay & Legend Fix (Task 3c)
+   226→
+   227→### WelcomeOverlay Component (`src/components/WelcomeOverlay.tsx`)
+   228→- New `"use client"` component that shows on first visit only
+   229→- Checks `localStorage` for `"nomadmy-welcomed"` key on mount; if absent, displays overlay
+   230→- Full-viewport overlay with semi-transparent dark background (`#0a0a0f` at 95% opacity)
+   231→- Centered glassmorphism card (`bg-[#0d1b2a]/80`, `backdrop-blur-2xl`)
+   232→- Animated entrance via Framer Motion (`AnimatePresence`, fade-in + scale-up with spring easing)
+   233→- Content:
+   234→  - Gold `Sparkles` badge ("Nomad Workspace Finder")
+   235→  - "Welcome to NomadMY" heading in `#e0c97f`
+   236→  - Tagline: "Your interactive guide to work-friendly spaces across Malaysia"
+   237→  - 3 feature highlight cards in a responsive grid (1-col mobile, 3-col desktop):
+   238→    1. `Map` icon — "Interactive Malaysia Map" — "Click states to explore venues"
+   239→    2. `Wifi` icon — "Verified Wi-Fi Speeds" — "Real speed test data from nomads"
+   240→    3. `Coffee` icon — "Cost Index" — "Coffee prices, day passes & more"
+   241→  - "Start Exploring" CTA button with gold `#e0c97f` background and `ChevronRight` icon
+   242→  - Hint: "Press F to toggle this panel anytime"
+   243→  - Close `X` button in top-right corner
+   244→- Uses Lucide React icons: `Map`, `Wifi`, `Coffee`, `X`, `ChevronRight`, `Sparkles`
+   245→- On dismiss (button click or X), sets `localStorage("nomadmy-welcomed", "true")`
+   246→- Backdrop uses `pointer-events-none` so the map underneath is still scrollable/interactive
+   247→- Card uses `pointer-events-auto` for full interactivity
+   248→
+   249→### Integration into `src/app/page.tsx`
+   250→- Imported `WelcomeOverlay` and placed after `FloatingFilterBar`, before the venue drawer
+   251→- Positioned with `z-50` so it renders above the map but is part of the main layout flow
+   252→
+   253→### MalaysiaMap Legend Fix (`src/components/MalaysiaMap.tsx`)
+   254→- Increased padding from `p-3.5` to `p-4` for better breathing room
+   255→- Added `min-w-[140px]` to legend container to prevent layout collapse
+   256→- Added `flex-shrink-0` to emoji icon boxes so they don't compress
+   257→- Added `whitespace-nowrap truncate` to category labels to prevent text overflow
+   258→- Increased bottom section spacing from `pt-2.5` to `pt-3` and `mt-3` to `mt-3`
+   259→- Added `whitespace-nowrap` to venue count text
+   260→
+   261→### Verification
+   262→- ✅ Lint passes clean (0 errors, 0 warnings)
+   263→
+   264→---
+   265→
+   266→## Task 3f — Expanded Seed Data (15 New Venues, 5 New States)
+   267→
+   268→### Objective
+   269→Add 15 more Malaysian venues to the seed file, covering states that previously had NO data: Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan, plus additional venues for existing states.
+   270→
+   271→### New Venues Added (15 total)
+   272→
+   273→| # | Name | Category | State | Area | Transit |
+   274→|---|------|----------|-------|------|--------|
+   275→| 1 | Kopi O Kangar | cafe | Perlis | Kangar | — |
+   276→| 2 | The White House Coffee | cafe | Kedah | Alor Setar | KTM ETS |
+   277→| 3 | Yellow Beach Cafe | cafe | Kedah | Langkawi | — |
+   278→| 4 | Artisan Roast Kuantan | cafe | Pahang | Kuantan | KTM ETS |
+   279→| 5 | Perpustakaan Negeri Pahang | public_space | Pahang | Kuantan | — |
+   280→| 6 | Kopitiam Kita | cafe | Terengganu | Kuala Terengganu | — |
+   281→| 7 | SpaceU Coworking KT | coworking | Terengganu | Kuala Terengganu | — |
+   282→| 8 | N9 Coffee House | cafe | Negeri Sembilan | Seremban | KTM Komuter |
+   283→| 9 | Perpustakaan Negeri Negeri Sembilan | public_space | Negeri Sembilan | Seremban | KTM Komuter |
+   284→| 10 | Ferringhi Coffee Garden | cafe | Penang | Batu Ferringhi | — |
+   285→| 11 | Muar Riverfront Cafe | cafe | Johor | Muar | KTM ETS |
+   286→| 12 | The Good Space Mont Kiara | coworking | Kuala Lumpur | Mont Kiara | MRT Putrajaya Line |
+   287→| 13 | Sim Sim Waterfront Cafe | cafe | Sabah | Sandakan | — |
+   288→| 14 | Miri City Public Library | public_space | Sarawak | Miri | — |
+   289→| 15 | Common Ground Shah Alam | coworking | Selangor | Shah Alam | LRT Shah Alam Line |
+   290→
+   291→### State Coverage
+   292→- **Before**: 7 states (Kuala Lumpur, Selangor, Penang, Johor, Melaka, Sabah, Sarawak)
+   293→- **After**: 12 states (+ Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan)
+   294→- **Total venues**: 40 (up from 25)
+   295→
+   296→### Data Details
+   297→- All venues include: workProfile, venueCost (MYR pricing), wifiMetrics (1-2 entries), realistic Google Place IDs
+   298→- Transit links added where applicable (KTM ETS, KTM Komuter, MRT Putrajaya Line, LRT Shah Alam Line)
+   299→- Ratings range 4.0-4.6, user ratings 78-1873
+   300→- Coordinates are realistic WGS84 for each area
+   301→- Wi-Fi speeds reflect regional differences (lower in East Malaysia/rural areas, higher in KL/Selangor)
+   302→
+   303→### Verification
+   304→- Seed ran successfully: 40 locations across 12 states
+   305→- No errors during seeding
+   306→- All new states (Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan) populated
+   307→
+   308→---
+   309→
+   310→## Task 4-b — globals.css Styling Enhancements
+   311→
+   312→### Objective
+   313→Improve src/app/globals.css with design tokens, custom scrollbar, glass utilities, keyframe animations, and noise texture overlay.
+   314→
+   315→### Changes Made
+   316→
+   317→#### 1. CSS Custom Properties (Design Tokens) — :root
+   318→Added 5 NomadMY design tokens:
+   319→- --navy-950: #0a0a0f
+   320→- --navy-900: #0d1b2a
+   321→- --gold: #e0c97f
+   322→- --gold-dim: #e0c97f40
+   323→- --red: #e94560
+   324→
+   325→#### 2. Body Base Styles — @layer base
+   326→Enhanced existing body rule with:
+   327→- font-feature-settings for better character rendering
+   328→- -webkit-font-smoothing: antialiased
+   329→- -moz-osx-font-smoothing: grayscale
+   330→- scroll-behavior: smooth
+   331→
+   332→#### 3. Custom Scrollbar — Dark Theme
+   333→- Webkit: 6px width, transparent track, gold-tinted thumb, hover darker gold
+   334→- Firefox: scrollbar-width: thin and scrollbar-color with gold tint
+   335→- .nav-scrollable: Hidden by default, revealed on hover
+   336→
+   337→#### 4. Glass Utility Classes
+   338→- .glass — navy-900/90, blur-xl, border-gold/15, shadow-lg
+   339→- .glass-strong — navy-900/95, blur-2xl, border-gold/20, shadow-xl
+   340→- .glass-subtle — navy-900/60, blur-md, border-gold/8
+   341→
+   342→#### 5. Keyframe Animations
+   343→- pinPulse — Gold box-shadow pulse
+   344→- shimmer — Background position sweep for loading skeletons
+   345→- gradientBorder — Looping gradient position for active filter bar
+   346→
+   347→#### 6. Noise Texture Overlay (.noise-bg::before)
+   348→- SVG feTurbulence fractal noise as inline data URI
+   349→- 256x256px tile, opacity 0.03, pointer-events none
+   350→
+   351→### Verification
+   352→- Lint passes clean (0 errors, 0 warnings)
+   353→- File grew from 123 to 275 lines, all existing content preserved
+   354→
+   355→---
+   356→
+   357→## Phase 4 — Bug Fixes, Styling Improvements & New Features
+   358→
+   359→### Status Assessment
+   360→Phase 3 had completed the original build with 40 venues across 12 states. QA review identified multiple bugs and areas for improvement.
+   361→
+   362→### Bugs Fixed
+   363→
+   364→1. **CostExplorer.tsx — Missing `</BarChart>` closing tag + extra `</motion.div>`**
+   365→   - BarChart JSX element at line 209 had no closing tag
+   366→   - An extra `</motion.div>` was present causing "Expected corresponding JSX closing tag for 'div'" lint error
+   367→
+   368→2. **FavoritesList.tsx — Broken string literals (2 occurrences)**
+   369→   - Lines 121, 131: `"#e0c97f]/40"` was invalid CSS color
+   370→   - Fixed to `"rgba(224, 201, 127, 0.4)"` (proper CSS rgba)
+   371→
+   372→3. **Incomplete state-to-slug mappings (6 files)**
+   373→   - The 5 new states added in Task 3f (Perlis, Kedah, Pahang, Terengganu, Negeri Sembilan) were missing from:
+   374→     - `SLUG_TO_STATE` in map-store.ts
+   375→     - `ACTIVE_STATES` in map-store.ts
+   376→     - `useFilteredLocations` stateMap in map-store.ts
+   377→     - `SLUG_TO_STATE_MAP` in SidebarNav.tsx
+   378→     - State filtering in TopHeader.tsx
+   379→     - State filtering in StatsPanel.tsx
+   380→   - All 12 states now correctly mapped
+   381→
+   382→### Styling Improvements
+   383→
+   384→1. **globals.css — Design system foundations**
+   385→   - CSS custom properties for design tokens (--navy-950, --navy-900, --gold, --gold-dim, --red)
+   386→   - Custom scrollbar styling (6px gold-tinted, Firefox scrollbar-width: thin)
+   387→   - `.nav-scrollable` class: hidden scrollbar until hover
+   388→   - `.glass`, `.glass-strong`, `.glass-subtle` utility classes for glassmorphism
+   389→   - `@keyframes pinPulse`, `shimmer`, `gradientBorder` animations
+   390→   - `.noise-bg::before` SVG noise texture overlay for depth
+   391→   - Body: font-feature-settings, antialiased rendering, smooth scrolling
+   392→
+   393→2. **StatsPanel — Visual hierarchy improvements**
+   394→   - StatCard values increased to `text-2xl` with `tabular-nums` for better number rendering
+   395→   - `border-t-2` accent color on each StatCard matching its metric color
+   396→   - Grid gap increased from `gap-3` to `gap-4`
+   397→   - Labels upgraded to `text-[11px] font-medium`
+   398→   - Snappier hover animation with spring physics
+   399→
+   400→3. **VenueList — Enhanced empty state**
+   401→   - Replaced simple icon+text with decorative rounded-2xl gradient container
+   402→   - Added "Clear Filters" CTA button that calls `resetFilters()`
+   403→   - Added `nav-scrollable` class for cleaner scrollbar
+   404→
+   405→4. **FavoritesList — Enhanced empty state**
+   406→   - Decorative heart container with gradient from red
+   407→   - Improved text hierarchy and max-width constraint
+   408→
+   409→5. **Page.tsx — Layout enhancements**
+   410→   - Added `noise-bg` class to root container for subtle texture
+   411→   - Wrapped with `<Suspense>` for `useSearchParams()` (shared venue links)
+   412→   - Loading spinner with gold border animation as Suspense fallback
+   413→
+   414→### New Features Added
+   415→
+   416→1. **Wi-Fi Speed Leaderboard (`WifiLeaderboard.tsx`)**
+   417→   - Ranked list of all 40 venues sorted by avgDownloadMbps
+   418→   - Top 3 get gold/silver/bronze rank badges
+   419→   - Color-coded speed bars (green >100, amber >50, red ≤50)
+   420→   - Mini horizontal bar showing relative speed
+   421→   - Staggered entrance animations
+   422→   - Click to open VenueDrawer
+   423→   - Legend footer
+   424→
+   425→2. **Top 10 Venues Ranking (`TopVenuesRanking.tsx`)**
+   426→   - Composite score: Wi-Fi 40% + Rating 35% + Cost 25%
+   427→   - SVG score ring with gold→red gradient
+   428→   - Rank badges with gradient backgrounds for top 3
+   429→   - Key metrics displayed: Wi-Fi speed, rating, coffee price
+   430→   - Score formula: wifiScore(min(dl/200,1))*0.4 + ratingScore(rating/5)*0.35 + costScore(max(1-price/30,0))*0.25
+   431→
+   432→3. **State Coverage Heatmap (`StateHeatmap.tsx`)**
+   433→   - 3-column grid of state tiles replacing plain text pills in sidebar
+   434→   - Background color interpolates based on venue count
+   435→   - State abbreviations (KL, Sel, Pen, etc.) for compact display
+   436→   - Intensity legend bar at bottom
+   437→   - Top states get subtle glow effect
+   438→   - Click to select state, hover shows full name tooltip
+   439→
+   440→4. **Share Venue Button**
+   441→   - Added to VenueDrawer header (Share2 icon)
+   442→   - Copies `?venue=ID` URL to clipboard
+   443→   - Animated "Copied!" tooltip on success
+   444→   - Green highlight on shared state
+   445→
+   446→5. **Shared Venue Deep Links**
+   447→   - `page.tsx` reads `?venue=ID` from searchParams
+   448→   - Auto-opens VenueDrawer for shared venue on page load
+   449→   - Wrapped in Suspense boundary for proper async handling
+   450→
+   451→6. **Sidebar Navigation Updates**
+   452→   - Added "Speed Rank" (Zap icon) and "Top 10" (Trophy icon) nav items
+   453→   - Total 10 nav items now
+   454→   - Replaced "Regions" text pills section with StateHeatmap component
+   455→   - Removed unused ACTIVE_STATES import
+   456→
+   457→### Verification
+   458→- ✅ Lint passes clean (0 errors, 0 warnings)
+   459→- ✅ Server compiles and serves HTTP 200
+   460→- ✅ Page HTML contains "NomadMY", "Speed Rank", "Top 10", "Share" strings
+   461→- ✅ API returns 40 venues across 12 states with full data
+   462→- ✅ All state mappings consistent across 6 files
+   463→
+   464→---
+   465→
+   466→## Unresolved Issues / Next Phase Recommendations
+   467→
+   468→1. **East Malaysia rendering** — krackedmaps focuses on Peninsular Malaysia; Sabah/Sarawak pins may not render. Consider an inset mini-map or iframe fallback for East Malaysia.
+   469→
+   470→2. **agent-browser connectivity** — `agent-browser` cannot connect to localhost:3000 in this sandbox environment. Visual QA done via curl and code analysis only.
+   471→
+   472→3. **Google Maps verification pipeline** — Backend Google Places verification not yet implemented. Currently uses pre-seeded Google Place IDs.
+   473→
+   474→4. **Additional features to build:**
+   475→   - Wi-Fi speedtest mini-service (real-time speed testing)
+   476→   - User authentication (NextAuth)
+   477→   - Venue submission flow with admin approval
+   478→   - Transit proximity auto-calculation
+   479→   - Community reviews/ratings system
+   480→   - Map marker clustering
+   481→   - Export venue data as PDF/CSV
+   482→   - Mobile PWA support
+   483→   - i18n support (English/Bahasa Melayu toggle exists but is non-functional)
+   484→   - Drag-to-dismiss gesture on VenueDrawer
+   485→   - Map pin click → open venue drawer
+   486→
+   487→5. **Polish opportunities:**
+   488→   - Animated map pin placement
+   489→   - Drill-down to district level in krackedmaps
+   490→   - Dark/light theme fully working (currently defaults dark, light theme has hardcoded dark colors)
+   491→   - Keyboard shortcut hints could show dynamically based on context
+   492→
+   493→---
+   494→
+   495→Task ID: 3a
+   496→Agent: full-stack-developer (map)
+   497→Task: Map pin click handler + label optimization
+   498→
+   499→Work Log:
+   500→- Read krackedmaps type definitions (`node_modules/krackedmaps/dist/index.d.ts`) — confirmed `EventName = "select" | "hover" | "drill"`, no built-in pinClick event exists
+   501→- Analyzed krackedmaps ESM source — pins rendered as `<g class="pin" data-id="...">` SVG groups inside `<g class="pins">`; the root click handler checks `.pin` but doesn't emit an event
+   502→- Imported `setSelectedVenue` and `LocationPin` type into MalaysiaMap.tsx
+   503→- Added `useMemo` `venueById` lookup map (venue ID → LocationPin) for O(1) resolution on pin clicks
+   504→- Added pin click DOM event listener via event delegation on `map.root` — detects clicks on `.pin` SVG groups, reads `data-id`, resolves venue from `venueById`, calls `setSelectedVenue(venue)` to open the drawer
+   505→- Added proper cleanup in the useEffect return to remove event listener on unmount
+   506→- Implemented label optimization: `shouldAbbreviate` flag is `true` when no state is focused AND `visibleLocations.length > 8`
+   507→- When abbreviated: uses area name (e.g., "Bangsar", "Mont Kiara") instead of full venue name; if area name exceeds 15 chars, truncates with "…"
+   508→- When state is focused (selectedState !== null): always shows full venue names regardless of count
+   509→- Added `getPinLabel` callback used by `updatePins`, with `getPinLabel` in the dependency array
+   510→
+   511→Stage Summary:
+   512→- Map pins are now clickable — clicking a pin opens the VenueDrawer with that venue's details
+   513→- Label overlap reduced — when viewing all 40 venues (national view), pins show compact area names instead of long venue names
+   514→- When zoomed into a state (fewer pins), full venue names are restored for clarity
+   515→- No new dependencies added; lint passes clean (0 errors)
+   516→
+   517→---
+   518→
+   519→## Phase 5 — Bug Fixes, Styling Improvements & New Features
+   520→
+   521→### Status Assessment
+   522→Phase 4 was complete but the application had critical runtime errors preventing it from loading (HTTP 500). A comprehensive QA and development cycle was performed.
+   523→
+   524→### Bugs Fixed
+   525→
+   526→1. **CRITICAL: `page.tsx` — Two `export default` functions**
+   527→   - `HomePage` and `PageWrapper` both had `export default`, causing Turbopack compilation error
+   528→   - Fixed by removing `export` from `HomePage` (now a named export), keeping only `PageWrapper` as default
+   529→   - This fixed the HTTP 500 error preventing the entire app from loading
+   530→
+   531→2. **CRITICAL: Nested `<button>` inside `<button>` in VenueCard**
+   532→   - `VenueCard` used `motion.button` as the outer element with a regular `<button>` for the favorite heart inside
+   533→   - Invalid HTML causing React hydration warnings in the console
+   534→   - Fixed by changing inner `<button>` to `<div role="button">` with proper `onClick`, `onKeyDown`, `tabIndex`, and `aria-label`
+   535→
+   536→3. **Stale HMR error cache** — The `export default` error persisted in Turbopack's cache causing repeated console errors. Fixed by the source code correction above.
+   537→
+   538→### Styling Improvements
+   539→
+   540→1. **`globals.css` — New utility classes and animations**
+   541→   - Focus-visible gold ring for keyboard navigation (`*:focus-visible`)
+   542→   - Global smooth scrollbar (6px gold-tinted)
+   543→   - `.shimmer` loading animation utility
+   544→   - `.glass-card` — consistent glass card styling with inset highlight
+   545→   - `.transition-gpu` — GPU-accelerated transition utility
+   546→   - `.text-glow` — subtle gold text-shadow for headings
+   547→   - `.pulse-gold` — pulsing gold box-shadow animation
+   548→   - `@keyframes floatDot` — floating decorative dot animation
+   549→   - `@keyframes shine` — left-to-right sweep for CTA buttons
+   550→
+   551→2. **`FloatingFilterBar.tsx` — Premium filter UX**
+   552→   - Framer Motion fade-up entrance animation on mount
+   553→   - Gradient top border accent (gold-to-transparent)
+   554→   - Search input: inner glow focus effect (`focus:shadow`)
+   555→   - Filter toggle button: `pulse-gold` animation when filters are active
+   556→   - **Live filtered count** — replaced manual count with `useFilteredLocations().length` from the actual filter selector
+   557→
+   558→3. **`WelcomeOverlay.tsx` — Enhanced visual polish**
+   559→   - Decorative floating dots (8 positions, staggered animations)
+   560→   - Dot grid background pattern using radial-gradient
+   561→   - Feature cards: hover lift effect (`whileHover={{ y: -4 }}`) with shadow
+   562→   - CTA button: shine sweep effect on hover + motion scale
+   563→   - Heading uses `.text-glow` for subtle gold text-shadow
+   564→   - Improved close button z-index
+   565→
+   566→4. **`VenueList.tsx` — Card polish**
+   567→   - Category color accent left border on hover (CSS `before:` pseudo-element with `var(--cat-color)`)
+   568→   - Skeleton loading: all elements use `.shimmer` class for animated loading
+   569→   - Badge sizing improved: `px-1.5 py-0.5 h-4` for better readability
+   570→   - Badge gap: added `gap-0.5` for icon-text spacing
+   571→
+   572→### New Features Added
+   573→
+   574→1. **Map Pin Click → Venue Drawer** (`MalaysiaMap.tsx`)
+   575→   - DOM event delegation on `map.root` detects clicks on `.pin[data-id]` SVG elements
+   576→   - Resolves venue from `venueById` lookup map (memoized)
+   577→   - Calls `setSelectedVenue(venue)` to open the drawer
+   578→   - No krackedmaps pin click event exists, so custom DOM delegation was implemented
+   579→
+   580→2. **Map Label Optimization** (`MalaysiaMap.tsx`)
+   581→   - When `!selectedState && visibleLocations.length > 8`: shows abbreviated area names (max 15 chars)
+   582→   - When state is focused (fewer pins): shows full venue names for clarity
+   583→   - Reduces text overlap on national view with 40+ pins
+   584→
+   585→3. **i18n System** (`src/lib/i18n.ts`)
+   586→   - Complete translation system with 90+ keys covering all UI text
+   587→   - English (`en`) and Bahasa Melayu (`bm`) locales
+   588→   - `t(key, locale)` function with fallback chain: locale → English → raw key
+   589→   - Locale persisted in Zustand store via `partialize`
+   590→
+   591→4. **Functional Language Toggle** (`TopHeader.tsx`)
+   592→   - AnimatePresence-powered animated dropdown (fade + scale)
+   593→   - Active language indicator with gold dot + "Active" label
+   594→   - Click-away backdrop to dismiss
+   595→   - Locale code shown in header button (EN/BM)
+   596→   - Header badges use localized strings
+   597→
+   598→5. **CSV Export** (`src/app/api/export/route.ts`)
+   599→   - GET endpoint returning all venues as CSV
+   600→   - 12 columns: Name, Category, State, Area, Lat, Lng, Wi-Fi, Rating, Coffee Price, Day Pass, Power, Noise
+   601→   - Proper `Content-Type: text/csv` and `Content-Disposition` headers
+   602→   - Export button in sidebar (Download icon) with toast notification
+   603→
+   604→6. **Export Nav Item** (`SidebarNav.tsx`)
+   605→   - New "Export" nav item between Stats and Favorites
+   606→   - Triggers CSV download via `/api/export`
+   607→   - Shows localized success toast on completion
+   608→
+   609→### Verification
+   610→- ✅ Lint passes clean (0 errors, 0 warnings)
+   611→- ✅ API returns 40 venues across 12 states
+   612→- ✅ Server compiles and serves HTTP 200 (verified before browser hang)
+   613→- ✅ All subagent work integrated and consistent
+   614→- ✅ Hydration error resolved (nested button fix)
+   615→
+   616→---
+   617→
+   618→## Current Project Status (Phase 5 Complete)
+   619→
+   620→### What Works
+   621→- 40 seeded venues across 12 Malaysian states (KL 10, Penang 6, Selangor 4, Johor 4, Sabah 3, Melaka 2, Pahang 2, Terengganu 2, Sarawak 2, NS 2, Kedah 2, Perlis 1)
+   622→- Interactive krackedmaps with custom dark theme
+   623→- Click-to-open venue drawer from both map pins and venue list
+   624→- Pin label optimization (area names when zoomed out, full names when zoomed in)
+   625→- State selection and filtering (Wi-Fi speed, power outlets, noise, categories)
+   626→- Functional EN/BM language toggle with persistent preference
+   627→- CSV export of all venue data
+   628→- Favorites system with localStorage persistence
+   629→- Venue comparison (up to 3)
+   630→- Wi-Fi Speed Leaderboard + Top 10 Venues Ranking
+   631→- State Coverage Heatmap in sidebar
+   632→- Shared venue deep links (`?venue=ID`)
+   633→- Welcome overlay (first visit only)
+   634→- Keyboard shortcuts (/, Esc, F)
+   635→- Premium dark navy + gold design system with glassmorphism, shimmer, and gold pulse animations
+   636→
+   637→### Unresolved Issues
+   638→
+   639→1. **East Malaysia rendering** — krackedmaps focuses on Peninsular Malaysia; Sabah/Sarawak pins (5 venues) may not render. Consider an inset mini-map.
+   640→
+   641→2. **Light theme** — Dark theme is the default and fully polished. Light theme exists but uses hardcoded dark colors and needs a full redesign.
+   642→
+   643→3. **Agent-browser connectivity** — Browser automation sessions can hang after extended use, preventing visual QA.
+   644→
+   645→### Recommended Next Phase Priorities
+   646→
+   647→1. **Mobile responsive QA** — Test and optimize all components on mobile viewports (320px-768px)
+   648→2. **Pin marker clustering** — Implement spatial clustering for densely-packed pins (KL area)
+   649→3. **User authentication** — NextAuth.js integration for venue submissions and reviews
+   650→4. **Venue submission flow** — Admin-approved community venue submissions
+   651→5. **Map pin animations** — Animate pin placement on state change
+   652→6. **Drag-to-dismiss** — Swipe gesture on VenueDrawer for mobile
+   653→

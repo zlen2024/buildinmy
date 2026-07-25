@@ -12,6 +12,7 @@ import { FavoritesList } from "@/components/FavoritesList";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { WifiLeaderboard } from "@/components/WifiLeaderboard";
 import { TopVenuesRanking } from "@/components/TopVenuesRanking";
+import { CompareFloatingBar } from "@/components/CompareFloatingBar";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -132,6 +133,9 @@ function HomePage() {
       <main className="flex-1 relative overflow-hidden">
         {/* Top Header */}
         <TopHeader />
+
+        {/* Compare Floating Bar */}
+        <CompareFloatingBar />
 
         {/* Map Canvas */}
         <div className="absolute inset-0">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMapStore, CATEGORY_CONFIG, type VenueCategory, type LocationPin } from "@/lib/map-store";
 import { cn } from "@/lib/utils";
 import {
@@ -27,6 +27,14 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
+// Category hero images (generated for NomadMY)
+const CATEGORY_HERO_IMAGES: Record<string, string> = {
+  coworking: '/venue-images/coworking-hero.png',
+  cafe: '/venue-images/cafe-hero.png',
+  public_space: '/venue-images/public-hero.png',
+  coliving: '/venue-images/coliving-hero.png',
+};
+
 interface VenueDrawerProps {
   venue: LocationPin;
   onClose: () => void;
@@ -42,6 +50,11 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
   const isCompared = compareIds.includes(venue.id);
   const [shared, setShared] = useState(false);
 
+  // Animated Wi-Fi bar width percentage
+  const wifiBarWidth = useMemo(() => Math.min(100, (venue.avgDownloadMbps / 300) * 100), [venue.avgDownloadMbps]);
+  const wifiBarColor = venue.avgDownloadMbps > 100 ? "#22c55e" : venue.avgDownloadMbps > 50 ? "#f59e0b" : "#ef4444";
+  const heroImage = CATEGORY_HERO_IMAGES[venue.category];
+
   return (
     <AnimatePresence>
       <motion.div
@@ -49,12 +62,52 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden"
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-hidden"
       >
         <div className="bg-[#0d1b2a]/98 backdrop-blur-2xl border-t border-[#e0c97f]/15 rounded-t-3xl shadow-2xl shadow-black/60">
-          {/* Handle bar */}
-          <div className="flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 rounded-full bg-[#e0c97f]/20" />
+          {/* Photo Banner with Category Gradient */}
+          <div className="relative h-28 overflow-hidden rounded-t-3xl">
+            {/* Gradient background */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(135deg, ${categoryConfig.color}18 0%, ${categoryConfig.color}08 40%, #0d1b2a 100%)`,
+              }}
+            />
+            {/* Hero image overlay */}
+            {heroImage && (
+              <img
+                src={heroImage}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay"
+                loading="lazy"
+              />
+            )}
+            {/* Category pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: `radial-gradient(circle at 20% 80%, ${categoryConfig.color} 1px, transparent 1px), radial-gradient(circle at 80% 20%, ${categoryConfig.color} 1px, transparent 1px)`,
+                    backgroundSize: '40px 40px',
+              }}
+            />
+            {/* Large category emoji */}
+            <div className="absolute top-1/2 left-6 -translate-y-1/2">
+              <span className="text-5xl opacity-30">
+                {categoryConfig.emoji}
+              </span>
+            </div>
+            {/* Bottom gradient fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0d1b2a]/98 to-transparent" />
+          </div>
+
+          {/* Handle bar — wider with subtle pulse */}
+          <div className="flex justify-center -mt-5 relative z-10">
+            <motion.div
+              className="w-14 h-1.5 rounded-full bg-[#e0c97f]/25"
+              animate={{ boxShadow: ['0 0 0 0 rgba(224,201,127,0.2)', '0 0 0 4px rgba(224,201,127,0)', '0 0 0 0 rgba(224,201,127,0.2)'] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </div>
 
           {/* Header */}
@@ -152,31 +205,55 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
 
           {/* Content */}
           <div className="px-5 pb-6 overflow-y-auto max-h-[55vh] space-y-5">
-            {/* Wi-Fi Speed */}
+            {/* Section Divider */}
+            <SectionDivider />
+
+            {/* Wi-Fi Speed — Animated Bar */}
             <div className="bg-[#e0c97f]/5 rounded-xl p-4 border border-[#e0c97f]/8">
               <div className="flex items-center gap-2 mb-3">
-                <Wifi className="w-4 h-4 text-[#22c55e]" />
+                <Wifi className="w-4 h-4" style={{ color: wifiBarColor }} />
                 <span className="text-xs font-medium text-[#e0c97f]/70">Wi-Fi Speed</span>
+                <motion.span
+                  key={venue.avgDownloadMbps}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#e0c97f]/5"
+                  style={{ color: wifiBarColor }}
+                >
+                  {venue.avgDownloadMbps > 200 ? 'Excellent' : venue.avgDownloadMbps > 100 ? 'Fast' : venue.avgDownloadMbps > 50 ? 'Good' : 'Moderate'}
+                </motion.span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-[#22c55e]">{venue.avgDownloadMbps}</span>
+                <motion.span
+                  className="text-3xl font-bold tabular-nums"
+                  style={{ color: wifiBarColor }}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+                >
+                  {venue.avgDownloadMbps}
+                </motion.span>
                 <span className="text-sm text-[#e0c97f]/40">Mbps avg download</span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-[#e0c97f]/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (venue.avgDownloadMbps / 300) * 100)}%`,
-                    backgroundColor: venue.avgDownloadMbps > 100 ? "#22c55e" : venue.avgDownloadMbps > 50 ? "#f59e0b" : "#ef4444",
-                  }}
+              <div className="mt-2.5 h-2.5 rounded-full bg-[#e0c97f]/10 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${wifiBarWidth}%` }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.2 }}
+                  style={{ backgroundColor: wifiBarColor }}
                 />
               </div>
-              <div className="flex justify-between mt-1 text-[10px] text-[#e0c97f]/30">
-                <span>Slow</span>
-                <span>Good</span>
-                <span>Excellent</span>
+              <div className="flex justify-between mt-1.5 text-[10px] text-[#e0c97f]/25">
+                <span>0</span>
+                <span>100</span>
+                <span>200</span>
+                <span>300</span>
               </div>
             </div>
+
+            {/* Section Divider */}
+            <SectionDivider />
 
             {/* Work Profile */}
             {venue.workProfile && (
@@ -220,6 +297,9 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
               </div>
             )}
 
+            {/* Section Divider */}
+            <SectionDivider />
+
             {/* Cost Info */}
             {venue.venueCost && (
               <div className="bg-[#e0c97f]/5 rounded-xl p-4 border border-[#e0c97f]/8">
@@ -236,6 +316,9 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 </div>
               </div>
             )}
+
+            {/* Section Divider */}
+            <SectionDivider />
 
             {/* Transit Links */}
             {venue.transitLinks && venue.transitLinks.length > 0 && (
@@ -261,16 +344,17 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
               </div>
             )}
 
-            {/* Google Maps link */}
+            {/* Google Maps link — with shine effect */}
             {venue.googleMapsUrl && (
               <a
                 href={venue.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#e0c97f]/10 border border-[#e0c97f]/20 text-[#e0c97f] text-sm font-medium hover:bg-[#e0c97f]/20 transition-colors"
+                className="group relative flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#e0c97f]/10 border border-[#e0c97f]/20 text-[#e0c97f] text-sm font-medium hover:bg-[#e0c97f]/15 transition-all overflow-hidden"
               >
-                <ExternalLink className="w-4 h-4" />
-                Open in Google Maps
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#e0c97f]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 -translate-x-full group-hover:translate-x-full" />
+                <ExternalLink className="w-4 h-4 relative" />
+                <span className="relative">Open in Google Maps</span>
               </a>
             )}
           </div>
@@ -298,7 +382,17 @@ function CostItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
       <p className="text-[10px] text-[#e0c97f]/40 mb-0.5">{label}</p>
-      <p className="text-sm font-semibold text-[#e0c97f]">{value}</p>
+      <p className="text-sm font-semibold text-[#e0c97f] tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function SectionDivider() {
+  return (
+    <div className="flex items-center gap-3 py-0.5">
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/10 to-transparent" />
+      <div className="w-1 h-1 rounded-full bg-[#e0c97f]/20" />
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/10 to-transparent" />
     </div>
   );
 }

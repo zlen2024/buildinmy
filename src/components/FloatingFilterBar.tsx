@@ -36,6 +36,7 @@ export function FloatingFilterBar() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Search suggestions - memoized
@@ -51,6 +52,30 @@ export function FloatingFilterBar() {
       )
       .slice(0, 6);
   }, [searchQuery, locations]);
+
+  // Keyboard navigation handler for search input
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev + 1) % suggestions.length);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+        break;
+      case "Enter":
+        if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+          setSearchQuery(suggestions[highlightedIndex].name);
+          setShowSuggestions(false);
+        }
+        break;
+      case "Escape":
+        setShowSuggestions(false);
+        break;
+    }
+  };
 
   // Close suggestions on click outside
   useEffect(() => {
@@ -71,6 +96,16 @@ export function FloatingFilterBar() {
     callFriendly ||
     selectedState !== null;
 
+  // Count of active filters for badge
+  const activeFilterCount = [
+    activeCategories.length > 0 ? activeCategories.length : 0,
+    minWifiSpeed > 0 ? 1 : 0,
+    highPowerSockets ? 1 : 0,
+    quietEnvironment ? 1 : 0,
+    callFriendly ? 1 : 0,
+    selectedState !== null ? 1 : 0,
+  ].reduce((a, b) => a + b, 0);
+
   // Live filtered count from the actual filter selector
   const filteredLocations = useFilteredLocations();
   const filteredCount = filteredLocations.length;
@@ -83,7 +118,7 @@ export function FloatingFilterBar() {
       className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
     >
       <div className="max-w-5xl mx-auto p-3 sm:p-4">
-        <div className="pointer-events-auto bg-[#0d1b2a]/95 backdrop-blur-2xl border border-[#e0c97f]/12 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative">
+        <div className="pointer-events-auto glass-strong rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative">
           {/* Gradient top border accent */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/40 to-transparent" />
           {/* Search row */}
@@ -96,8 +131,10 @@ export function FloatingFilterBar() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
+                  setHighlightedIndex(-1);
                   setShowSuggestions(true);
                 }}
+                onKeyDown={handleSearchKeyDown}
                 onFocus={() => setShowSuggestions(true)}
                 className="w-full pl-10 pr-4 py-2.5 bg-[#e0c97f]/5 border border-[#e0c97f]/10 rounded-xl text-sm text-[#e0c97f] placeholder:text-[#e0c97f]/25 focus:outline-none focus:border-[#e0c97f]/25 focus:bg-[#e0c97f]/8 focus:shadow-[0_0_0_3px_rgba(224,201,127,0.08)] transition-all"
               />
@@ -126,7 +163,13 @@ export function FloatingFilterBar() {
                           setSearchQuery(loc.name);
                           setShowSuggestions(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#e0c97f]/8 transition-colors text-left border-b border-[#e0c97f]/5 last:border-0"
+                        onMouseEnter={() => setHighlightedIndex(i)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left border-b border-[#e0c97f]/5 last:border-0",
+                          i === highlightedIndex
+                            ? "bg-[#e0c97f]/12 text-[#e0c97f] border-l-2 border-[#e0c97f]"
+                            : "hover:bg-[#e0c97f]/8"
+                        )}
                       >
                         <span className="text-sm">{CATEGORY_CONFIG[loc.category as VenueCategory]?.emoji || "📍"}</span>
                         <div className="flex-1 min-w-0">
@@ -152,6 +195,11 @@ export function FloatingFilterBar() {
               )}
             >
               <SlidersHorizontal className="w-4 h-4" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-[#e94560] text-[9px] font-bold text-white flex items-center justify-center px-1">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
 
             {/* Result count */}

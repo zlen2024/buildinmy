@@ -650,3 +650,188 @@ Phase 4 was complete but the application had critical runtime errors preventing 
 4. **Venue submission flow** — Admin-approved community venue submissions
 5. **Map pin animations** — Animate pin placement on state change
 6. **Drag-to-dismiss** — Swipe gesture on VenueDrawer for mobile
+
+---
+Task ID: 6-b
+Agent: full-stack-developer
+Task: New features — keyboard search, compare bar, pin tooltip
+
+Work Log:
+- Read existing worklog and project context (map-store state, existing components, design tokens)
+- Read FloatingFilterBar.tsx to understand current search suggestions implementation
+- Added highlightedIndex state (-1 default) for keyboard navigation tracking
+- Added handleSearchKeyDown handler with ArrowDown (wrap increment), ArrowUp (wrap decrement), Enter (select), Escape (close)
+- Added onKeyDown={handleSearchKeyDown} to search input
+- Added onMouseEnter={() => setHighlightedIndex(i)} to each suggestion button for mouse sync
+- Applied highlighted styling: bg-[#e0c97f]/12 text-[#e0c97f] border-l-2 border-[#e0c97f] when i === highlightedIndex
+- Reset highlightedIndex to -1 in the onChange handler (avoiding useEffect setState lint error)
+- Created CompareFloatingBar.tsx: fixed position bar (z-35), glass-card background, venue avatar badges, Compare Now + Clear buttons, framer-motion slide-down animation, responsive compact mobile view
+- Created MapPinTooltip.tsx: floating tooltip with glass background, category emoji, venue name (truncated), area/state, color-coded Wi-Fi badge, Google rating star, coffee price, Click for details hint, framer-motion fade-in/scale animation, cursor offset positioning
+- Integrated CompareFloatingBar into page.tsx after TopHeader, before Map Canvas
+- Fixed lint error: removed useEffect that called setState synchronously, moved reset to onChange handler
+- Final bun run lint passes clean
+
+Stage Summary:
+- Keyboard-navigable search dropdown: ArrowUp/Down to navigate, Enter to select, Escape to close, mouse hover syncs with keyboard highlight
+- CompareFloatingBar: appears when compareIds.length > 0, shows venue count + avatar badges, Compare Now opens favorites sidebar, Clear button, responsive mobile compact mode
+- MapPinTooltip: reusable component for hover previews on map pins, follows cursor with offset, color-coded Wi-Fi (green/amber/red), ready for integration with MalaysiaMap
+
+Verification (continued session):
+- Re-read all 4 files to confirm implementations match spec
+- Cleaned up extra blank line in FloatingFilterBar.tsx
+- Ran `bun run lint` — passes clean with zero errors
+- All existing functionality preserved, no conflicting changes to files modified by Task 6-a
+
+---
+
+## Phase 6 — Styling Improvements & New Features
+
+### Status Assessment
+Phase 5 was complete and stable. QA confirmed: lint clean (0 errors), all APIs returning 200, 40 venues across 12 states, no runtime errors. Agent-browser unavailable (known sandbox connectivity issue). Verified via curl + dev log analysis.
+
+### Bugs Found
+None — application is stable with zero lint errors and clean compilation.
+
+### Styling Improvements
+
+1. **globals.css — New Animations & Utility Classes**
+   - `@keyframes aurora` — slow-moving hue-shifting gradient for hero areas
+   - `@keyframes fadeSlideUp` — opacity 0→1 with translateY for staggered card entrances
+   - `@keyframes scaleIn` — scale 0.9→1 with opacity for pop-in elements
+   - `@keyframes borderGlow` — subtle gold box-shadow pulse for active elements
+   - `.aurora-bg` — animated multi-stop gradient background (400% 400%, 15s cycle)
+   - `.card-hover-lift` — hover translateY(-2px) + elevated shadow
+   - `.touch-feedback` — active:scale(0.98) for mobile touch targets
+   - `.gold-gradient-text` — animated gold gradient text with shimmer
+
+2. **VenueDrawer — Photo Banner & Animated Sections**
+   - Category-specific gradient photo banner (h-28) at top of drawer
+   - Hero image overlay (coworking/cafe/public_space/coliving) at 20% opacity
+   - Dot pattern overlay using category color
+   - Large category emoji watermark in banner
+   - Bottom gradient fade blending into content
+   - Wider drag handle bar (w-14) with gold pulse animation
+   - **Animated Wi-Fi speed bar**: spring-physics width animation (0→actual), speed label badge, larger font (text-3xl), tabular-nums for number stability
+   - **Section dividers**: gradient line + gold dot separator between Wi-Fi, Work Profile, Cost, Transit sections
+   - **Google Maps button**: shine sweep hover effect using translate-x animation
+   - Cost values now use `tabular-nums` for consistent number rendering
+
+3. **MalaysiaMap — Enhanced Legend & State Overlay**
+   - Legend container uses `glass-card` CSS class (consistent glass styling)
+   - Legend emoji icons have `card-hover-lift` hover effect
+   - **Animated venue count**: AnimatePresence + motion.span with spring physics for smooth number transitions
+   - **State name banner**: framer-motion entrance (fade + scale + y-offset), `gold-gradient-text` for state names, subtle gold glow box-shadow
+
+4. **FloatingFilterBar — Glass Enhancement & Filter Badge**
+   - Main filter bar uses `glass-strong` class (95% opacity, blur-40px, stronger border)
+   - **Active filter count badge**: Red pill badge on filter toggle showing exact number of active filters
+   - **Keyboard-navigable search**: ArrowDown/Up to navigate suggestions, Enter to select, Escape to close, mouse hover syncs with keyboard highlight
+
+### New Features Added
+
+1. **CompareFloatingBar Component** (`src/components/CompareFloatingBar.tsx`)
+   - Fixed position bar below header (z-35) shown when venues are being compared
+   - Glass-card background with slide-down entrance animation
+   - "Comparing X venues" label + circular avatar badges (first letter + category color)
+   - "Compare Now" button navigates to favorites panel and opens sidebar
+   - Clear button (X icon) calls clearCompare()
+   - Responsive: compact mobile version (just count + Compare button)
+   - Integrated into page.tsx after TopHeader
+
+2. **MapPinTooltip Component** (`src/components/MapPinTooltip.tsx`)
+   - Reusable floating tooltip for map pin hover previews
+   - Glass card with category emoji, truncated venue name, area/state
+   - Color-coded Wi-Fi badge: green (>100), amber (>50), red (≤50)
+   - Google rating with star icon, coffee price
+   - "Click for details" hint at bottom
+   - Framer-motion fade-in/scale animation, positioned at cursor + 12px right, -10px up
+
+3. **Keyboard-Navigable Search** (in FloatingFilterBar.tsx)
+   - highlightedIndex state tracks active suggestion
+   - ArrowDown/ArrowUp with wrap-around navigation
+   - Enter selects highlighted suggestion
+   - Escape closes dropdown
+   - Mouse hover syncs with keyboard highlight
+   - Highlighted items get gold left-border accent + background highlight
+
+4. **Venue Category Hero Images** (in `public/venue-images/`)
+   - 4 AI-generated hero images: coworking-hero.png, cafe-hero.png, public-hero.png, coliving-hero.png
+   - Dark navy base with respective accent colors (gold, amber, blue, purple)
+   - 1344×768px resolution, web-optimized (93-156KB each)
+
+### Files Created
+1. `src/components/CompareFloatingBar.tsx` — Compare floating summary bar
+2. `src/components/MapPinTooltip.tsx` — Map pin hover tooltip
+3. `public/venue-images/coworking-hero.png` — Coworking space hero image
+4. `public/venue-images/cafe-hero.png` — Cafe hero image
+5. `public/venue-images/public-hero.png` — Public space hero image
+6. `public/venue-images/coliving-hero.png` — Co-living hero image
+
+### Files Modified
+1. `src/app/globals.css` — Added 4 keyframes + 5 utility classes
+2. `src/components/VenueDrawer.tsx` — Photo banner, animated Wi-Fi bar, section dividers, shine effect, drag handle pulse
+3. `src/components/MalaysiaMap.tsx` — Glass-card legend, animated venue count, animated state banner with gold-gradient-text
+4. `src/components/FloatingFilterBar.tsx` — glass-strong styling, filter count badge, keyboard-navigable search
+5. `src/app/page.tsx` — CompareFloatingBar integration
+
+### Verification
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ Server compiles and serves HTTP 200
+- ✅ API returns 40 venues across 12 states (GET /api/places 200 in 14ms)
+- ✅ Stats API returns correct data (GET /api/stats 200)
+- ✅ No runtime errors in dev log
+- ✅ All existing functionality preserved (favorites, comparison, keyboard shortcuts, i18n, CSV export)
+
+---
+
+## Current Project Status (Phase 6 Complete)
+
+### What Works
+- 40 seeded venues across 12 Malaysian states
+- Interactive krackedmaps with custom dark theme + glass-card legend
+- Animated venue count in legend + gold-gradient-text state banner
+- Click-to-open venue drawer from map pins and venue list
+- Pin label optimization (area names when zoomed out, full names when zoomed in)
+- State selection and filtering (Wi-Fi speed, power outlets, noise, categories)
+- **Photo banner** in venue drawer with AI-generated category hero images
+- **Animated Wi-Fi speed bar** with spring physics + speed tier label
+- **Section dividers** in drawer between content blocks
+- Functional EN/BM language toggle with persistent preference
+- CSV export of all venue data
+- Favorites system with localStorage persistence
+- Venue comparison (up to 3) with **floating compare bar**
+- Wi-Fi Speed Leaderboard + Top 10 Venues Ranking
+- State Coverage Heatmap in sidebar
+- Shared venue deep links (`?venue=ID`)
+- Welcome overlay (first visit only)
+- Keyboard shortcuts (/, Esc, F) + **keyboard-navigable search**
+- Premium dark navy + gold design system with glassmorphism, shimmer, aurora, and gold gradient text
+- **Active filter count badge** on filter toggle button
+- **Map pin hover tooltip** component (ready for integration)
+- **Touch feedback** and **card hover lift** CSS utilities
+
+### Unresolved Issues / Next Phase Recommendations
+
+1. **East Malaysia rendering** — krackedmaps focuses on Peninsular Malaysia; Sabah/Sarawak pins (5 venues) may not render. Consider an inset mini-map or separate map view.
+
+2. **MapPinTooltip integration** — Component created but not yet wired into MalaysiaMap hover events. Need to add mouseover/mouseout handlers on pin SVG elements and manage tooltip state.
+
+3. **Light theme** — Dark theme is fully polished. Light theme needs complete redesign (all hardcoded navy colors).
+
+4. **Agent-browser connectivity** — Browser cannot connect to localhost in sandbox. Visual QA done via curl + dev log only.
+
+5. **Additional features to build:**
+   - Pin marker clustering for KL area (10 venues densely packed)
+   - Mobile drag-to-dismiss gesture on VenueDrawer
+   - User authentication (NextAuth.js)
+   - Venue submission flow with admin approval
+   - Community reviews/ratings system
+   - Wi-Fi speedtest mini-service
+   - Animated map pin placement on state change
+   - PDF export of venue data
+
+6. **Polish opportunities:**
+   - Drill-down to district level in krackedmaps
+   - Drag-and-drop comparison reordering
+   - Dynamic keyboard shortcut hints based on context
+   - Offline PWA support with service worker
