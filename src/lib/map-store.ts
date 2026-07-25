@@ -175,7 +175,6 @@ export const useMapStore = create<MapState>()(
       name: 'nomadmy-storage',
       partialize: (state) => ({
         favoriteIds: state.favoriteIds,
-        sidebarOpen: state.sidebarOpen,
         locale: state.locale,
       }),
     }

@@ -12,7 +12,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { getRecentSearches, addRecentSearch, clearRecentSearches } from "@/lib/recent-searches";
 import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -38,6 +39,12 @@ export function FloatingFilterBar() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  const refreshRecentSearches = useCallback(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
 
   const suggestions = useMemo(() => {
     if (searchQuery.length === 0) return [];
@@ -66,7 +73,10 @@ export function FloatingFilterBar() {
       case "Enter":
         if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
           setSearchQuery(suggestions[highlightedIndex].name);
+          addRecentSearch(suggestions[highlightedIndex].name);
+          setRecentSearches(getRecentSearches());
           setShowSuggestions(false);
+          setInputFocused(false);
         }
         break;
       case "Escape":
@@ -114,8 +124,10 @@ export function FloatingFilterBar() {
     >
       <div className="max-w-5xl mx-auto p-3 sm:p-4">
         <div className="pointer-events-auto glass-strong rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative transition-all duration-300">
+          {/* Dot particle effect background */}
+          <div className="dot-particles" />
           {/* Gradient top accent line */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#e0c97f] via-[#e94560] to-[#e0c97f]/30" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#e0c97f] via-[#e94560] to-[#e0c97f]/30 z-10" />
           {/* Search row */}
           <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3">
             <div ref={searchRef} className="relative flex-1">
@@ -128,10 +140,11 @@ export function FloatingFilterBar() {
                   setSearchQuery(e.target.value);
                   setHighlightedIndex(-1);
                   setShowSuggestions(true);
+                  if (!e.target.value.trim()) refreshRecentSearches();
                 }}
                 onKeyDown={handleSearchKeyDown}
-                onFocus={() => setShowSuggestions(true)}
-                className="glass-input w-full pl-10 pr-4"
+                onFocus={() => { setShowSuggestions(true); setInputFocused(true); refreshRecentSearches(); }}
+                className="glass-input search-glow w-full pl-10 pr-4"
               />
               {searchQuery && (
                 <button
@@ -142,6 +155,43 @@ export function FloatingFilterBar() {
                 </button>
               )}
               {/* Search suggestions dropdown */}
+              {/* Recent searches */}
+              <AnimatePresence>
+                {showSuggestions && searchQuery.length === 0 && recentSearches.length > 0 && inputFocused && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#0d1b2a]/95 border border-[#e0c97f]/15 rounded-xl overflow-hidden shadow-xl shadow-black/40"
+                  >
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-[#e0c97f]/8">
+                      <span className="text-[10px] text-[#e0c97f]/30 font-medium uppercase tracking-wider">Recent</span>
+                      <button
+                        onClick={() => { clearRecentSearches(); setRecentSearches([]); }}
+                        className="text-[10px] text-[#e0c97f]/25 hover:text-[#e0c97f]/50 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {recentSearches.map((query) => (
+                      <button
+                        key={query}
+                        onClick={() => {
+                          setSearchQuery(query);
+                          addRecentSearch(query);
+                          setShowSuggestions(false);
+                          setInputFocused(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-[#e0c97f]/8 transition-colors border-b border-[#e0c97f]/5 last:border-0"
+                      >
+                        <span className="text-[11px] text-[#e0c97f]/50 truncate">{query}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {/* Autocomplete suggestions */}
               <AnimatePresence>
                 {showSuggestions && suggestions.length > 0 && (
                   <motion.div
@@ -156,7 +206,10 @@ export function FloatingFilterBar() {
                         key={loc.id}
                         onClick={() => {
                           setSearchQuery(loc.name);
+                          addRecentSearch(loc.name);
+                          setRecentSearches(getRecentSearches());
                           setShowSuggestions(false);
+                          setInputFocused(false);
                         }}
                         onMouseEnter={() => setHighlightedIndex(i)}
                         className={cn(
@@ -214,7 +267,7 @@ export function FloatingFilterBar() {
                   key={key}
                   onClick={() => toggleCategory(key)}
                   className={cn(
-                    "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-300 border",
+                    "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] font-medium pill-toggle-animate border",
                     activeCategories.includes(key)
                       ? "bg-[#e0c97f]/15 border-[#e0c97f]/30 text-[#e0c97f]"
                       : "bg-transparent border-[#e0c97f]/8 text-[#e0c97f]/35 hover:border-[#e0c97f]/15 hover:text-[#e0c97f]/55"
@@ -253,7 +306,7 @@ export function FloatingFilterBar() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="border-t border-[#e0c97f]/8 overflow-hidden"
               >
                 <div className="p-4 space-y-5 bg-[#0d1b2a]/50">

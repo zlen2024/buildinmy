@@ -14,6 +14,8 @@ import { WifiLeaderboard } from "@/components/WifiLeaderboard";
 import { TopVenuesRanking } from "@/components/TopVenuesRanking";
 import { CompareFloatingBar } from "@/components/CompareFloatingBar";
 import { AIChatAssistant } from "@/components/AIChatAssistant";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import { NetworkStatus } from "@/components/NetworkStatus";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ function HomePage() {
   const setSidebarOpen = useMapStore((s) => s.setSidebarOpen);
   const setSearchQuery = useMapStore((s) => s.setSearchQuery);
   const toggleFavorite = useMapStore((s) => s.toggleFavorite);
+  const toggleCategory = useMapStore((s) => s.toggleCategory);
   const favoriteIds = useMapStore((s) => s.favoriteIds);
   const locations = useMapStore((s) => s.locations);
 
@@ -90,11 +93,27 @@ function HomePage() {
           if (e.ctrlKey || e.metaKey) return;
           setSidebarOpen(!sidebarOpen);
           break;
+        case "1":
+          e.preventDefault();
+          toggleCategory("coworking");
+          break;
+        case "2":
+          e.preventDefault();
+          toggleCategory("cafe");
+          break;
+        case "3":
+          e.preventDefault();
+          toggleCategory("public_space");
+          break;
+        case "4":
+          e.preventDefault();
+          toggleCategory("coliving");
+          break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedVenue, setSelectedVenue, sidebarOpen, setSidebarOpen]);
+  }, [selectedVenue, setSelectedVenue, sidebarOpen, setSidebarOpen, toggleCategory]);
 
   // Determine panel content based on active nav
   const renderPanelContent = () => {
@@ -186,6 +205,12 @@ function HomePage() {
 
       {/* Welcome Overlay (first visit only) */}
       <WelcomeOverlay />
+
+      {/* Network Status Indicator */}
+      <NetworkStatus />
+
+      {/* Keyboard Shortcuts Overlay */}
+      <KeyboardShortcuts />
 
       {/* Venue Detail Drawer */}
       {selectedVenue && (

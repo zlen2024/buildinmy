@@ -14,7 +14,6 @@ import {
   Heart,
   Loader2,
   RotateCcw,
-  Clock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -70,19 +69,20 @@ export function VenueList() {
           </div>
         ) : filteredLocations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            {/* CSS-only compass rose illustration */}
-            <div className="relative w-20 h-20 mb-5">
+            {/* CSS-only compass rose illustration with gentle rotation */}
+            <div className="relative w-20 h-20 mb-5 compass-rose-rotate">
               <div className="absolute inset-0 rounded-full border border-[#e0c97f]/10" />
               <div className="absolute inset-2 rounded-full border border-[#e0c97f]/5" />
+              <div className="absolute inset-4 rounded-full border border-[#e0c97f]/3" />
               {/* N/S/E/W lines */}
-              <div className="absolute top-2 bottom-2 left-1/2 w-px bg-gradient-to-b from-[#e0c97f]/20 via-[#e0c97f]/8 to-[#e0c97f]/20 -translate-x-1/2" />
-              <div className="absolute left-2 right-2 top-1/2 h-px bg-gradient-to-r from-[#e0c97f]/20 via-[#e0c97f]/8 to-[#e0c97f]/20 -translate-y-1/2" />
+              <div className="absolute top-2 bottom-2 left-1/2 w-px bg-gradient-to-b from-[#e0c97f]/25 via-[#e0c97f]/10 to-[#e0c97f]/25 -translate-x-1/2" />
+              <div className="absolute left-2 right-2 top-1/2 h-px bg-gradient-to-r from-[#e0c97f]/25 via-[#e0c97f]/10 to-[#e0c97f]/25 -translate-y-1/2" />
               {/* Diagonal lines */}
-              <div className="absolute inset-3 rounded-full border border-[#e0c97f]/4 rotate-45" />
-              {/* Center dot */}
-              <div className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-[#e0c97f]/20 -translate-x-1/2 -translate-y-1/2" />
+              <div className="absolute inset-3 rounded-full border border-[#e0c97f]/5 rotate-45" />
+              {/* Center dot with glow */}
+              <div className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-[#e0c97f]/25 -translate-x-1/2 -translate-y-1/2 pulse-soft" style={{ boxShadow: '0 0 8px rgba(224, 201, 127, 0.2)' }} />
               {/* North marker */}
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-transparent border-b-[#e0c97f]/30" />
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-transparent border-b-[#e0c97f]/35" />
             </div>
             <p className="text-sm text-[#e0c97f]/40 font-medium">No venues found</p>
             <p className="text-xs text-[#e0c97f]/20 mt-1 max-w-[200px]">Try adjusting your filters or search query to find work-friendly spaces</p>
@@ -131,14 +131,18 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
 
   return (
     <motion.button
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 30, 150), duration: 0.2 }}
-      whileHover={{ scale: 1.01 }}
+      initial={{ opacity: 0, y: 8, x: 0 }}
+      animate={{ opacity: 1, y: 0, x: 0 }}
+      transition={{ delay: Math.min(index * 40, 200), duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ scale: 1.01, x: 2 }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      style={{ '--cat-color': categoryConfig.color, borderLeftColor: categoryConfig.color + '30' } as React.CSSProperties}
-      className="venue-card w-full flex items-start gap-3 text-left group relative hover:shadow-lg hover:shadow-[#e0c97f]/5 border-l-2"
+      style={{
+        '--cat-color': categoryConfig.color,
+        '--cat-glow-color': categoryConfig.color + '25',
+        borderLeftColor: categoryConfig.color + '30',
+      } as React.CSSProperties}
+      className="venue-card card-shimmer-hover category-border-glow ripple-effect w-full flex items-start gap-3 text-left group relative hover:shadow-lg hover:shadow-[#e0c97f]/5"
     >
       {/* Category icon */}
       <div
@@ -157,11 +161,18 @@ function VenueCard({ venue, index, onClick, isFavorite, onToggleFavorite }: Venu
           <p className="text-[10px] text-[#e0c97f]/30 truncate">{venue.area}, {venue.state}</p>
           {isOpen !== null && (
             <span className={cn(
-              "flex items-center gap-0.5 text-[9px] font-medium",
-              isOpen ? "text-[#22c55e]/70" : "text-[#ef4444]/70"
+              "flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full",
+              isOpen
+                ? "text-[#22c55e] bg-[#22c55e]/10 border border-[#22c55e]/15"
+                : "text-[#ef4444]/70 bg-[#ef4444]/8 border border-[#ef4444]/10"
             )}>
-              <Clock className="w-2 h-2" />
-              {isOpen ? "Open Now" : "Closed"}
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isOpen
+                  ? "bg-[#22c55e] pulse-soft"
+                  : "bg-[#ef4444]/50"
+              )} />
+              {isOpen ? "Open" : "Closed"}
             </span>
           )}
         </div>

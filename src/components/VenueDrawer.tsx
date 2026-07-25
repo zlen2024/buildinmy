@@ -84,6 +84,17 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
   const wifiBarColor = venue.avgDownloadMbps > 100 ? "#22c55e" : venue.avgDownloadMbps > 50 ? "#f59e0b" : "#ef4444";
   const heroImage = CATEGORY_HERO_IMAGES[venue.category];
 
+  // Scroll progress state
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const progress = scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0;
+    setScrollProgress(Math.min(1, Math.max(0, progress)));
+  }, []);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -102,8 +113,17 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
             onTouchMove={handleDragTouchMove}
             onTouchEnd={handleDragTouchEnd}
           >
-          {/* Photo Banner with Category Gradient */}
+          {/* Photo Banner with Category Gradient + Animated Top Gradient */}
           <div className="relative h-28 overflow-hidden rounded-t-3xl">
+            {/* Animated gradient sweep at the top */}
+            <div
+              className="absolute inset-0 opacity-60"
+              style={{
+                background: `linear-gradient(90deg, transparent 0%, ${categoryConfig.color}15 30%, ${categoryConfig.color}25 50%, ${categoryConfig.color}15 70%, transparent 100%)`,
+                backgroundSize: '200% 100%',
+                animation: 'gradientFlow 4s ease-in-out infinite',
+              }}
+            />
             {/* Gradient background */}
             <div
               className="absolute inset-0"
@@ -243,7 +263,11 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
           </div>{/* end drag handle zone */}
 
           {/* Content */}
-          <div className="px-5 pb-6 overflow-y-auto max-h-[55vh] space-y-5">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="px-5 pb-6 overflow-y-auto max-h-[55vh] space-y-5"
+          >
             {/* Section Divider */}
             <SectionDivider />
 
@@ -274,13 +298,16 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
                 </motion.span>
                 <span className="text-sm text-[#e0c97f]/40">Mbps avg download</span>
               </div>
-              <div className="mt-2.5 h-2.5 rounded-full bg-[#e0c97f]/10 overflow-hidden">
+              <div className="mt-2.5 h-2.5 rounded-full bg-[#e0c97f]/10 overflow-hidden progress-glow">
                 <motion.div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full wifi-bar-gradient"
                   initial={{ width: 0 }}
                   animate={{ width: `${wifiBarWidth}%` }}
                   transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.2 }}
-                  style={{ backgroundColor: wifiBarColor }}
+                  style={{
+                    '--wifi-bar-color': wifiBarColor,
+                    '--wifi-bar-color-light': wifiBarColor + 'cc',
+                  } as React.CSSProperties}
                 />
               </div>
               <div className="flex justify-between mt-1.5 text-[10px] text-[#e0c97f]/25">
@@ -403,6 +430,16 @@ export function VenueDrawer({ venue, onClose }: VenueDrawerProps) {
             {/* Nearby Venues */}
             <NearbyVenues currentVenue={venue} allVenues={locations} />
           </div>
+
+          {/* Scroll progress indicator */}
+          <div className="px-5 pb-3">
+            <div className="scroll-progress-track">
+              <div
+                className="scroll-progress-fill"
+                style={{ width: `${scrollProgress * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>
@@ -413,7 +450,7 @@ function MetricCard({ icon, label, value, color }: { icon: React.ReactNode; labe
   return (
     <div className="bg-[#e0c97f]/5 rounded-lg p-3 border border-[#e0c97f]/5">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <span style={{ color }}>{icon}</span>
+        <span className="icon-badge-glass p-1.5" style={{ color }}>{icon}</span>
         <span className="text-[10px] text-[#e0c97f]/40">{label}</span>
       </div>
       <p className="text-xs font-medium capitalize" style={{ color }}>
@@ -435,9 +472,9 @@ function CostItem({ label, value }: { label: string; value: string }) {
 function SectionDivider() {
   return (
     <div className="flex items-center gap-3 py-0.5">
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/10 to-transparent" />
-      <div className="w-1 h-1 rounded-full bg-[#e0c97f]/20" />
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e0c97f]/10 to-transparent" />
+      <div className="flex-1 h-px animated-gradient-divider" />
+      <div className="w-1 h-1 rounded-full bg-[#e0c97f]/20 pulse-soft" />
+      <div className="flex-1 h-px animated-gradient-divider" />
     </div>
   );
 }

@@ -462,6 +462,428 @@
 }
 
 /* ============================================================
+   Task 4 — Advanced Visual Enhancements
+   ============================================================ */
+
+/* Starfield background — subtle twinkling stars for dark backgrounds */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.starfield-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.starfield-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(224, 201, 127, 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 45%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 10%, rgba(224, 201, 127, 0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 70%, rgba(224, 201, 127, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 30%, rgba(224, 201, 127, 0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 55%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(224, 201, 127, 0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 15%, rgba(224, 201, 127, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 90%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 40%, rgba(224, 201, 127, 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 60%, rgba(224, 201, 127, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 85%, rgba(224, 201, 127, 0.3) 0%, transparent 100%);
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+/* Glass morphism stronger — enhanced blur with inner glow */
+.glass-morphism-stronger {
+  background: rgba(13, 27, 42, 0.92);
+  backdrop-filter: blur(60px) saturate(1.5);
+  -webkit-backdrop-filter: blur(60px) saturate(1.5);
+  border: 1px solid rgba(224, 201, 127, 0.18);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 0 rgba(224, 201, 127, 0.08),
+    inset 0 -1px 0 0 rgba(224, 201, 127, 0.03);
+}
+
+/* Animated gold text shimmer for headings */
+@keyframes textShimmerGold {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.text-shimmer-gold {
+  background: linear-gradient(
+    90deg,
+    rgba(224, 201, 127, 0.6) 0%,
+    rgba(245, 230, 184, 1) 25%,
+    rgba(224, 201, 127, 0.6) 50%,
+    rgba(245, 230, 184, 1) 75%,
+    rgba(224, 201, 127, 0.6) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: textShimmerGold 4s linear infinite;
+}
+
+/* Progress bar glow effect */
+@keyframes progressGlowPulse {
+  0%, 100% { filter: brightness(1); box-shadow: 0 0 4px currentColor; }
+  50% { filter: brightness(1.2); box-shadow: 0 0 12px currentColor; }
+}
+
+.progress-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: progressGlowPulse 2.5s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite, progressGlowPulse 2.5s ease-in-out infinite;
+}
+
+/* Click ripple effect */
+@keyframes rippleExpand {
+  0% { transform: scale(0); opacity: 0.4; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: "";
+  position: absolute;
+  top: var(--ripple-top, 50%);
+  left: var(--ripple-left, 50%);
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  margin-left: -20px;
+  border-radius: 50%;
+  background: rgba(224, 201, 127, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0s;
+}
+
+.ripple-effect:active::before {
+  animation: rippleExpand 0.5s ease-out;
+  opacity: 1;
+}
+
+/* Animated gradient border */
+@keyframes gradientBorderRotate {
+  0% { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.gradient-border-animated {
+  position: relative;
+  border-radius: 1rem;
+}
+
+.gradient-border-animated::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--border-angle),
+    rgba(224, 201, 127, 0.3),
+    rgba(233, 69, 96, 0.3),
+    rgba(224, 201, 127, 0.1),
+    rgba(233, 69, 96, 0.1),
+    rgba(224, 201, 127, 0.3)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: gradientBorderRotate 4s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gentle floating animation */
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.float-gentle {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+
+/* Soft pulse — gentler version of pulse */
+@keyframes pulseSoft {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+.pulse-soft {
+  animation: pulseSoft 3s ease-in-out infinite;
+}
+
+/* Vignette effect for map edges */
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(10, 10, 15, 0.4) 80%,
+    rgba(10, 10, 15, 0.7) 100%
+  );
+}
+
+/* Animated gradient flow for section dividers */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-divider {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(224, 201, 127, 0.05) 15%,
+    rgba(224, 201, 127, 0.15) 50%,
+    rgba(224, 201, 127, 0.05) 85%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: gradientFlow 3s ease-in-out infinite;
+}
+
+/* Compass rose rotation animation */
+@keyframes compassRotate {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.compass-rose-rotate {
+  animation: compassRotate 8s ease-in-out infinite;
+}
+
+/* Scroll progress indicator */
+@keyframes scrollProgressGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.scroll-progress-track {
+  position: relative;
+  height: 2px;
+  background: rgba(224, 201, 127, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.scroll-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(224, 201, 127, 0.4), rgba(233, 69, 96, 0.4), rgba(224, 201, 127, 0.4));
+  transition: width 0.15s ease-out;
+  box-shadow: 0 0 6px rgba(224, 201, 127, 0.3);
+}
+
+/* Dot particle background for filter bar */
+@keyframes particleDrift {
+  0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+  25% { transform: translate(3px, -2px); opacity: 0.4; }
+  50% { transform: translate(-1px, -4px); opacity: 0.2; }
+  75% { transform: translate(2px, 1px); opacity: 0.35; }
+}
+
+.dot-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dot-particles::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 5% 15%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 75%, rgba(224, 201, 127, 0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 35%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 85%, rgba(224, 201, 127, 0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 55%, rgba(224, 201, 127, 0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 25%, rgba(224, 201, 127, 0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 65%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 45%, rgba(224, 201, 127, 0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 80%, rgba(224, 201, 127, 0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 20%, rgba(224, 201, 127, 0.25) 0%, transparent 100%);
+  animation: particleDrift 8s ease-in-out infinite;
+}
+
+/* Search input focus glow */
+.search-glow {
+  transition: all 0.3s ease;
+}
+
+.search-glow:focus {
+  box-shadow:
+    0 0 0 1px rgba(224, 201, 127, 0.3),
+    0 0 20px rgba(224, 201, 127, 0.06),
+    0 0 40px rgba(224, 201, 127, 0.03);
+  border-color: rgba(224, 201, 127, 0.35) !important;
+}
+
+/* Category pill toggle scale animation */
+@keyframes pillPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.pill-toggle-animate {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pill-toggle-animate:active {
+  animation: pillPop 0.3s ease;
+}
+
+/* Card shimmer hover overlay */
+.card-shimmer-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(224, 201, 127, 0.04) 45%,
+    rgba(224, 201, 127, 0.08) 50%,
+    rgba(224, 201, 127, 0.04) 55%,
+    transparent 60%
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  transition: background-position 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.card-shimmer-hover:hover::after {
+  background-position: -100% 0;
+}
+
+/* Left border glow for category cards */
+@keyframes borderGlowPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
+
+.category-border-glow {
+  border-left-width: 2px;
+  border-left-style: solid;
+  transition: border-left-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.category-border-glow:hover {
+  box-shadow: -3px 0 8px -2px var(--cat-glow-color, rgba(224, 201, 127, 0.15));
+}
+
+/* Animated stat background gradient */
+.stat-gradient-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-gradient-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 30% 50%,
+    var(--stat-gradient, rgba(224, 201, 127, 0.04)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Wi-Fi bar gradient + glow */
+.wifi-bar-gradient {
+  background: linear-gradient(90deg, var(--wifi-bar-color, #22c55e), var(--wifi-bar-color-light, #4ade80));
+  box-shadow: 0 0 8px var(--wifi-bar-color, rgba(34, 197, 94, 0.3));
+  border-radius: inherit;
+}
+
+/* Icon badge glass effect */
+.icon-badge-glass {
+  background: rgba(13, 27, 42, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(224, 201, 127, 0.1);
+  border-radius: 0.5rem;
+}
+
+/* Legend item hover animation */
+.legend-item-hover {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.legend-item-hover:hover {
+  transform: translateX(4px);
+}
+
+.legend-item-hover:hover .legend-icon {
+  transform: scale(1.15);
+  box-shadow: 0 0 12px var(--legend-color, rgba(224, 201, 127, 0.2));
+}
+
+.legend-icon {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* State badge enhanced glow */
+.state-badge-glow {
+  box-shadow:
+    0 0 20px rgba(224, 201, 127, 0.1),
+    0 0 40px rgba(224, 201, 127, 0.05),
+    inset 0 1px 0 rgba(224, 201, 127, 0.1);
+}
+
+/* ============================================================
    Task 3a — Additional Utility Classes
    ============================================================ */
 
@@ -580,4 +1002,21 @@
   border-radius: 50%;
   background: rgba(224, 201, 127, 0.25);
   flex-shrink: 0;
+}
+
+/* ============================================================
+   Starfield Twinkle Animation
+   ============================================================ */
+
+@keyframes starfieldTwinkle {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.starfield-twinkle {
+  animation: starfieldTwinkle 4s ease-in-out infinite;
 }
