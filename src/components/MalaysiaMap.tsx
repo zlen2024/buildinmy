@@ -11,7 +11,20 @@ import { QuickStatsOverlay } from "@/components/QuickStatsOverlay";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { StarfieldBackground } from "@/components/StarfieldBackground";
 import { DistrictPanel } from "@/components/DistrictPanel";
-import { Wifi, Activity, ZoomIn, ZoomOut, Crosshair, Plus, Minus, LocateFixed, ChevronDown } from "lucide-react";
+import { StreetVenueCards } from "@/components/StreetVenueCards";
+import {
+  findDistrictPath,
+  computeDistrictViewBox,
+  animateViewBox,
+  parseViewBox,
+  slugifyDistrict,
+  STATE_DISTRICTS,
+  type ViewBox,
+} from "@/lib/districts";
+import {
+  Wifi, Activity, ZoomIn, ZoomOut, Crosshair, Plus, Minus, LocateFixed,
+  ChevronDown, MapPin, MapPinned, Building2, Coffee, Maximize2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StateSelectPayload {
@@ -48,11 +61,17 @@ export function MalaysiaMap() {
   const showWifiHeatmap = useMapStore((s) => s.showWifiHeatmap);
   const toggleWifiHeatmap = useMapStore((s) => s.toggleWifiHeatmap);
   const resetFilters = useMapStore((s) => s.resetFilters);
+  const zoomLevel = useMapStore((s) => s.zoomLevel);
+  const setZoomLevel = useMapStore((s) => s.setZoomLevel);
+  const showStreetCards = useMapStore((s) => s.showStreetCards);
+  const setShowStreetCards = useMapStore((s) => s.setShowStreetCards);
 
   const [mapReady, setMapReady] = useState(false);
   const [hoveredVenue, setHoveredVenue] = useState<LocationPin | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [legendCollapsed, setLegendCollapsed] = useState(false);
+  const [currentViewBox, setCurrentViewBox] = useState<ViewBox | null>(null);
+  const cancelZoomRef = useRef<(() => void) | null>(null);
 
   // Custom dark theme for the map (uses krackedmaps' actual CSS variable names)
   const customTheme: Record<string, string> = {
@@ -148,12 +167,17 @@ export function MalaysiaMap() {
   }, [locations, selectedState, selectedDistrict]);
 
   // Determine label visibility based on density and zoom level.
-  // - No state selected + few pins (<=4): show full names
-  // - Otherwise: HIDE labels — too dense or too zoomed in, use hover tooltips only
-  // This keeps the map clean and avoids overlap; the MapPinTooltip + bottom-left
-  // coordinate display provide context on hover.
-  const labelMode: 'full' | 'hidden' =
-    !selectedState && visibleLocations.length <= 4 ? 'full' : 'hidden';
+  // - Street zoom: always show full labels (pins are spread far apart)
+  // - District zoom: show full labels if ≤8 venues (room to breathe)
+  // - State zoom: show full labels if ≤4 venues
+  // - National: show full labels only if ≤4 venues total
+  // Otherwise HIDE labels — too dense, use hover tooltips only.
+  const labelMode: 'full' | 'hidden' = useMemo(() => {
+    if (zoomLevel === 'street') return 'full';
+    if (zoomLevel === 'district') return visibleLocations.length <= 8 ? 'full' : 'hidden';
+    if (selectedState) return visibleLocations.length <= 4 ? 'full' : 'hidden';
+    return visibleLocations.length <= 4 ? 'full' : 'hidden';
+  }, [zoomLevel, selectedState, visibleLocations.length]);
 
   // Label resolver based on mode
   const getPinLabel = useCallback(
@@ -200,29 +224,53 @@ export function MalaysiaMap() {
     updatePins();
   }, [updatePins]);
 
-  // Pin click handler — krackedmaps has no pinClick event, so we use DOM delegation
-  // Pins are rendered as <g class="pin" data-id="venueId"> in the SVG
+  // Pin click + district-shape click handler.
+  // - Clicking a pin (`<g class="pin" data-id="...">`) opens the venue drawer
+  // - Clicking a district shape (`<path class="district">`) when drilled in
+  //   selects that district and zooms into it (the user's requested feature)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
 
-    const handlePinClick = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
+      // Pin click takes priority
       const pinEl = (e.target as Element).closest('.pin');
-      if (!pinEl) return;
+      if (pinEl) {
+        const venueId = pinEl.getAttribute('data-id');
+        if (!venueId) return;
+        const venue = venueById.get(venueId);
+        if (venue) {
+          setSelectedVenue(venue);
+        }
+        return;
+      }
 
-      const venueId = pinEl.getAttribute('data-id');
-      if (!venueId) return;
-
-      const venue = venueById.get(venueId);
-      if (venue) {
-        setSelectedVenue(venue);
+      // District shape click — only relevant when drilled into a state
+      const districtEl = (e.target as Element).closest('path.district') as SVGPathElement | null;
+      if (districtEl && selectedState && drillEventFired) {
+        // krackedmaps district paths have id = `district-${stateSlug}-${districtSlug}`
+        // where districtSlug is slugified (e.g. "kota-bharu"). We need to convert
+        // it back to the display name (e.g. "Kota Bharu") so it matches what
+        // DistrictPanel stores in `selectedDistrict`.
+        const id = districtEl.getAttribute('id') || '';
+        const match = id.match(/^district-[^-]+-(.+)$/);
+        const districtSlug = match?.[1] || districtEl.getAttribute('data-slug') || '';
+        if (districtSlug) {
+          // Look up the display name via STATE_DISTRICTS list for this state
+          const districtsForState = STATE_DISTRICTS[selectedState] || [];
+          const displayName = districtsForState.find(
+            (d) => slugifyDistrict(d) === districtSlug,
+          ) || districtSlug;
+          // Toggle: if already selected, deselect; otherwise select
+          setSelectedDistrict(selectedDistrict === displayName ? null : displayName);
+        }
       }
     };
 
-    mapInstanceRef.current.root.addEventListener('click', handlePinClick);
+    mapInstanceRef.current.root.addEventListener('click', handleClick);
     return () => {
-      mapInstanceRef.current?.root.removeEventListener('click', handlePinClick);
+      mapInstanceRef.current?.root.removeEventListener('click', handleClick);
     };
-  }, [mapReady, venueById, setSelectedVenue]);
+  }, [mapReady, venueById, setSelectedVenue, selectedState, selectedDistrict, drillEventFired, setSelectedDistrict]);
 
   // Derived: are we drilled into a state?
   const isDrilledIn = !!selectedState && drillEventFired;
@@ -254,7 +302,16 @@ export function MalaysiaMap() {
     }
   }, [selectedState]);
 
-  // Highlight selected district on the map
+  // Highlight selected district on the map AND zoom into it.
+  // This is the user's "district-level zoom" feature: when a district is
+  // selected (via DistrictPanel click or by clicking a district shape on the
+  // map), we:
+  //   1. Call krackedmaps' `selectDistrict()` to highlight it
+  //   2. Find the district <path> in the SVG and animate the viewBox to a
+  //      tighter crop centred on it — this makes venue pins appear at more
+  //      accurate, spread-out positions.
+  // When the district is deselected (but state still selected), we re-focus
+  // the state to zoom back out.
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -262,14 +319,133 @@ export function MalaysiaMap() {
       if (selectedDistrict && typeof map.selectDistrict === "function") {
         map.selectDistrict(selectedDistrict);
       } else if (typeof map.selectDistrict === "function") {
-        // Deselect district when null — call with empty string or skip
-        // krackedmaps selectDistrict(key) — passing empty string clears highlight
         map.selectDistrict("");
       }
     } catch {
       /* ignore */
     }
-  }, [selectedDistrict, isDrilledIn]);
+
+    // Cancel any in-flight zoom animation
+    if (cancelZoomRef.current) {
+      cancelZoomRef.current();
+      cancelZoomRef.current = null;
+    }
+
+    if (!selectedDistrict) {
+      // Zoom back out to state level (re-focus state)
+      if (selectedState) {
+        try {
+          // Slight delay so krackedmaps' own drillInto state settles first
+          const t = setTimeout(() => {
+            if (mapInstanceRef.current && selectedState) {
+              try { mapInstanceRef.current.focus(selectedState); } catch { /* ignore */ }
+            }
+          }, 60);
+          return () => clearTimeout(t);
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+
+    // District zoom: find the path and animate viewBox into it.
+    // We retry a few times because the district paths may not be in the DOM
+    // until krackedmaps' drillInto animation completes.
+    if (!selectedState) return;
+    let attempts = 0;
+    const maxAttempts = 12;
+    const tryZoom = () => {
+      const inst = mapInstanceRef.current;
+      if (!inst) return;
+      const path = findDistrictPath(inst.svg, selectedState, selectedDistrict);
+      if (!path) {
+        attempts += 1;
+        if (attempts < maxAttempts) {
+          setTimeout(tryZoom, 80);
+        }
+        return;
+      }
+      // Path found — compute bbox and animate
+      try {
+        const bbox = path.getBBox();
+        if (bbox.width <= 0 || bbox.height <= 0) return;
+        const startVb = parseViewBox(inst.svg);
+        const aspectRatio = startVb
+          ? startVb.w / startVb.h
+          : inst.svg.clientWidth / inst.svg.clientHeight;
+        // Tight padding (8%) for a close-up district view
+        const target = computeDistrictViewBox(bbox, aspectRatio, 0.08);
+        cancelZoomRef.current = animateViewBox(
+          inst.svg,
+          target,
+          700,
+          (vb) => setCurrentViewBox(vb),
+        );
+      } catch {
+        /* getBBox can throw if not rendered */
+      }
+    };
+    const t = setTimeout(tryZoom, 120); // wait for drillInto animation
+    return () => clearTimeout(t);
+  }, [selectedDistrict, selectedState, isDrilledIn]);
+
+  // Street-level zoom: when zoomLevel === 'street', zoom even closer into
+  // the district (or state if no district). Toggled via the "Street view"
+  // button on the map.
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const inst = mapInstanceRef.current;
+    if (zoomLevel !== 'street') return;
+    if (!selectedState) {
+      // Can't go street without at least a state
+      setZoomLevel(selectedDistrict ? 'district' : selectedState ? 'state' : 'national');
+      return;
+    }
+    // Cancel existing zoom
+    if (cancelZoomRef.current) {
+      cancelZoomRef.current();
+      cancelZoomRef.current = null;
+    }
+    let attempts = 0;
+    const tryStreetZoom = () => {
+      const path = selectedDistrict
+        ? findDistrictPath(inst.svg, selectedState!, selectedDistrict)
+        : null;
+      let target: ViewBox | null = null;
+      try {
+        if (path) {
+          const bbox = path.getBBox();
+          if (bbox.width > 0 && bbox.height > 0) {
+            const startVb = parseViewBox(inst.svg);
+            const aspectRatio = startVb
+              ? startVb.w / startVb.h
+              : inst.svg.clientWidth / inst.svg.clientHeight;
+            // Very tight padding (3%) for street-level closeness
+            target = computeDistrictViewBox(bbox, aspectRatio, 0.03);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      if (!target) {
+        attempts += 1;
+        if (attempts < 12) {
+          setTimeout(tryStreetZoom, 80);
+        }
+        return;
+      }
+      cancelZoomRef.current = animateViewBox(
+        inst.svg,
+        target!,
+        800,
+        (vb) => setCurrentViewBox(vb),
+      );
+      setShowStreetCards(true);
+    };
+    const t = setTimeout(tryStreetZoom, 120);
+    return () => clearTimeout(t);
+  }, [zoomLevel, selectedState, selectedDistrict, setZoomLevel, setShowStreetCards]);
 
   // Pin hover tooltip — event delegation on SVG .pin[data-id] groups
   useEffect(() => {
@@ -306,6 +482,16 @@ export function MalaysiaMap() {
 
   // Venue count for selected state
   const venueCount = visibleLocations.length;
+
+  // Compute current zoom factor (relative to the national viewBox).
+  // Used to display "×N" in the breadcrumb at street level.
+  const streetZoomFactor = useMemo(() => {
+    if (!currentViewBox) return 1;
+    // krackedmaps' default/national viewBox is roughly 800x350 (from PROJECTION.viewW/H)
+    // The zoom factor is the ratio of national width to current width.
+    const nationalW = 800;
+    return Math.max(1, Math.round(nationalW / currentViewBox.w));
+  }, [currentViewBox]);
 
   // Wi-Fi speed by state for heatmap
   const wifiSpeedByState = useMemo(() => {
@@ -536,7 +722,7 @@ export function MalaysiaMap() {
         )}
       </AnimatePresence>
 
-      {/* Bottom-center context strip — shows state + district breadcrumb */}
+      {/* Bottom-center context strip — shows state + district + zoom-level breadcrumb */}
       <AnimatePresence>
         {selectedState && (
           <motion.div
@@ -547,6 +733,18 @@ export function MalaysiaMap() {
             className="absolute bottom-44 left-1/2 -translate-x-1/2 pointer-events-none z-20"
           >
             <div className="bg-[#0d1b2a]/85 backdrop-blur-md border border-[#e0c97f]/25 rounded-full px-4 py-2 shadow-lg flex items-center gap-2 state-badge-glow">
+              {/* Zoom level icon — changes per level */}
+              <span className="flex items-center justify-center w-4 h-4">
+                {zoomLevel === 'street' ? (
+                  <MapPinned className="w-3 h-3 text-[#22c55e]" />
+                ) : zoomLevel === 'district' ? (
+                  <MapPin className="w-3 h-3 text-[#f59e0b]" />
+                ) : zoomLevel === 'state' ? (
+                  <Building2 className="w-3 h-3 text-[#e0c97f]" />
+                ) : (
+                  <Maximize2 className="w-3 h-3 text-[#e0c97f]/60" />
+                )}
+              </span>
               <span className="text-[11px] text-[#e0c97f]/45 uppercase tracking-widest font-semibold">
                 {STATE_DISPLAY_NAMES[selectedState] || selectedState.replace(/-/g, ' ')}
               </span>
@@ -558,57 +756,129 @@ export function MalaysiaMap() {
                   </span>
                 </>
               )}
+              {zoomLevel === 'street' && (
+                <>
+                  <span className="text-[#e0c97f]/20">/</span>
+                  <span className="text-[11px] text-[#22c55e] font-semibold uppercase tracking-widest">
+                    Street
+                  </span>
+                </>
+              )}
               <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#e0c97f]/10 text-[9px] text-[#e0c97f]/60 font-mono">
                 {visibleLocations.length}
               </span>
+              {zoomLevel === 'street' && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#22c55e]/15 text-[9px] text-[#22c55e] font-mono">
+                  ×{streetZoomFactor}
+                </span>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Map zoom controls — bottom-right above filter bar */}
+      {/* Map zoom controls — bottom-right above filter bar.
+          Layered zoom: National → State → District → Street.
+          + button zooms one level deeper, − button zooms one level out. */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-1.5 pointer-events-auto">
+        {/* Street view toggle — only available when district is selected */}
+        <motion.button
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.05 }}
+          onClick={() => {
+            if (zoomLevel === 'street') {
+              setZoomLevel(selectedDistrict ? 'district' : 'state');
+              setShowStreetCards(false);
+            } else if (selectedDistrict) {
+              setZoomLevel('street');
+            }
+          }}
+          disabled={!selectedDistrict}
+          aria-label="Toggle street-level zoom"
+          title={zoomLevel === 'street' ? "Exit street view" : "Zoom to street level (closest)"}
+          className={cn(
+            "w-9 h-9 rounded-lg glass-card flex items-center justify-center transition-all duration-200 group relative",
+            selectedDistrict
+              ? zoomLevel === 'street'
+                ? "bg-[#e0c97f]/15 border-[#e0c97f]/45 text-[#e0c97f] street-view-active"
+                : "hover:border-[#e0c97f]/40 hover:bg-[#e0c97f]/8 text-[#e0c97f]/80 hover:text-[#e0c97f]"
+              : "opacity-40 cursor-not-allowed text-[#e0c97f]/40"
+          )}
+        >
+          <MapPinned className="w-4 h-4 transition-transform group-hover:scale-110" />
+          {zoomLevel === 'street' && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#e0c97f] animate-pulse" />
+          )}
+        </motion.button>
+
+        <div className="h-px bg-[#e0c97f]/10 mx-2 my-0.5" />
+
+        {/* Zoom in — go one level deeper */}
         <motion.button
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
           onClick={() => {
-            if (selectedState && mapInstanceRef.current) {
-              try { mapInstanceRef.current.focus(selectedState); } catch { /* ignore */ }
+            const inst = mapInstanceRef.current;
+            if (!inst) return;
+            if (zoomLevel === 'national' && selectedState) {
+              setZoomLevel('state');
+              try { inst.focus(selectedState); } catch { /* ignore */ }
+            } else if (zoomLevel === 'state' && selectedDistrict) {
+              setZoomLevel('district');
+            } else if (zoomLevel === 'district') {
+              setZoomLevel('street');
+            } else if (zoomLevel === 'national') {
+              // No state selected — just focus the whole map's center
+              try { inst.focus(null); } catch { /* ignore */ }
             }
           }}
-          disabled={!selectedState}
+          disabled={zoomLevel === 'street' || (!selectedState && zoomLevel === 'national')}
           aria-label="Zoom in"
-          title="Zoom in (focus selected state)"
+          title="Zoom in — go one level deeper"
           className={cn(
             "w-9 h-9 rounded-lg glass-card flex items-center justify-center transition-all duration-200 group",
-            selectedState
+            (zoomLevel !== 'street' && (selectedState || zoomLevel !== 'national'))
               ? "hover:border-[#e0c97f]/40 hover:bg-[#e0c97f]/8 text-[#e0c97f]/80 hover:text-[#e0c97f]"
               : "opacity-40 cursor-not-allowed text-[#e0c97f]/40"
           )}
         >
           <Plus className="w-4 h-4 transition-transform group-hover:scale-110" />
         </motion.button>
+
+        {/* Zoom out — go one level shallower */}
         <motion.button
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15 }}
           onClick={() => {
-            setSelectedDistrict(null);
-            setSelectedState(null);
+            if (zoomLevel === 'street') {
+              setZoomLevel('district');
+              setShowStreetCards(false);
+            } else if (zoomLevel === 'district') {
+              setSelectedDistrict(null);
+            } else if (zoomLevel === 'state') {
+              setSelectedState(null);
+            } else {
+              setSelectedDistrict(null);
+              setSelectedState(null);
+            }
           }}
-          disabled={!selectedState}
+          disabled={zoomLevel === 'national' && !selectedState}
           aria-label="Zoom out"
-          title="Zoom out (exit state)"
+          title="Zoom out — go one level shallower"
           className={cn(
             "w-9 h-9 rounded-lg glass-card flex items-center justify-center transition-all duration-200 group",
-            selectedState
+            !(zoomLevel === 'national' && !selectedState)
               ? "hover:border-[#e0c97f]/40 hover:bg-[#e0c97f]/8 text-[#e0c97f]/80 hover:text-[#e0c97f]"
               : "opacity-40 cursor-not-allowed text-[#e0c97f]/40"
           )}
         >
           <Minus className="w-4 h-4 transition-transform group-hover:scale-110" />
         </motion.button>
+
+        {/* Reset all */}
         <motion.button
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
@@ -616,6 +886,8 @@ export function MalaysiaMap() {
           onClick={() => {
             setSelectedDistrict(null);
             setSelectedState(null);
+            setZoomLevel('national');
+            setShowStreetCards(false);
             resetFilters();
           }}
           aria-label="Reset view"
@@ -625,6 +897,68 @@ export function MalaysiaMap() {
           <LocateFixed className="w-4 h-4 transition-transform group-hover:rotate-90" />
         </motion.button>
       </div>
+
+      {/* Zoom level indicator — bottom-right above zoom controls.
+          Shows current zoom level as a vertical ladder with active rung highlighted. */}
+      <motion.div
+        initial={{ opacity: 0, x: 12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.25 }}
+        className="absolute bottom-[200px] right-4 z-20 pointer-events-none"
+      >
+        <div className="glass-card px-2 py-2.5 flex flex-col items-center gap-1.5">
+          <p className="text-[8px] text-[#e0c97f]/40 font-semibold uppercase tracking-widest [writing-mode:vertical-rl] rotate-180">
+            Zoom
+          </p>
+          <div className="flex flex-col gap-1 items-center">
+            {(['national', 'state', 'district', 'street'] as const).map((level) => {
+              const isActive = zoomLevel === level;
+              const labels = { national: 'MY', state: 'State', district: 'Distr', street: 'St' };
+              const colors = { national: '#94a3b8', state: '#e0c97f', district: '#f59e0b', street: '#22c55e' };
+              return (
+                <div
+                  key={level}
+                  title={level.charAt(0).toUpperCase() + level.slice(1) + ' view'}
+                  className={cn(
+                    "flex items-center gap-1.5 transition-all duration-200",
+                    isActive && "scale-110"
+                  )}
+                >
+                  <motion.div
+                    animate={{
+                      width: isActive ? 16 : 8,
+                      opacity: isActive ? 1 : 0.35,
+                    }}
+                    transition={{ duration: 0.25 }}
+                    className="h-1 rounded-full"
+                    style={{ backgroundColor: isActive ? colors[level] : 'rgba(224, 201, 127, 0.4)' }}
+                  />
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -4 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="text-[8px] font-mono font-semibold"
+                      style={{ color: colors[level] }}
+                    >
+                      {labels[level]}
+                    </motion.span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Street-level floating venue cards — only shown at street zoom.
+          Renders compact venue cards next to each visible pin position. */}
+      <StreetVenueCards
+        visible={showStreetCards && zoomLevel === 'street'}
+        venues={visibleLocations}
+        mapInstance={mapInstanceRef}
+        currentViewBox={currentViewBox}
+        onVenueClick={setSelectedVenue}
+      />
 
       {/* Pin density indicator — top-right below legend */}
       <motion.div

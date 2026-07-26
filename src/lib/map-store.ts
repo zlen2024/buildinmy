@@ -83,10 +83,16 @@ interface MapState {
   showWifiHeatmap: boolean
   // District compare modal visibility
   showDistrictCompare: boolean
+  // Zoom level: national → state → district → street
+  zoomLevel: 'national' | 'state' | 'district' | 'street'
+  // Show floating venue cards at street level
+  showStreetCards: boolean
 
   // Actions
   setSelectedState: (state: string | null) => void
   setSelectedDistrict: (district: string | null) => void
+  setZoomLevel: (level: 'national' | 'state' | 'district' | 'street') => void
+  setShowStreetCards: (show: boolean) => void
   setSearchQuery: (query: string) => void
   toggleCategory: (category: VenueCategory) => void
   setCategories: (categories: VenueCategory[]) => void
@@ -145,9 +151,17 @@ export const useMapStore = create<MapState>()(
       locale: 'en' as Locale,
       showWifiHeatmap: false,
       showDistrictCompare: false,
+      zoomLevel: 'national',
+      showStreetCards: false,
 
-      setSelectedState: (state) => set({ selectedState: state, selectedDistrict: null }),
-      setSelectedDistrict: (district) => set({ selectedDistrict: district }),
+      setSelectedState: (state) => set({ selectedState: state, selectedDistrict: null, zoomLevel: state ? 'state' : 'national', showStreetCards: false }),
+      setSelectedDistrict: (district) => set((s) => ({
+        selectedDistrict: district,
+        zoomLevel: district ? 'district' : (s.selectedState ? 'state' : 'national'),
+        showStreetCards: false,
+      })),
+      setZoomLevel: (level) => set({ zoomLevel: level }),
+      setShowStreetCards: (show) => set({ showStreetCards: show }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       toggleCategory: (category) =>
         set((state) => ({

@@ -1524,3 +1524,126 @@ Stage Summary:
 6. **P3**: Real-time collaboration (WebSocket) for shared workspace discovery
 7. **P3**: PWA support (offline access, install prompt)
 8. **P3**: Performance optimization — lazy load components, memoize expensive computations
+
+---
+Task ID: 8
+Agent: main-agent
+Task: District-level deep zoom + street-level zoom + floating venue cards
+
+User Request:
+> "upon clicking specific district, make it zoom even closer so the venue or mark on map can be more detailed"
+
+Work Log:
+- Read worklog.md to assess prior state (Phase 9 complete with district-level zoom via krackedmaps drillInto + selectDistrict, but no actual zoom INTO a district — only highlight)
+- Investigated krackedmaps internals by reading dist/krackedmaps.esm.js:
+  - `focus(slug)` animates SVG viewBox to a state's bbox with 15%+8 padding
+  - `selectDistrict(key)` only highlights — does NOT zoom
+  - District paths have id = `district-${stateSlug}-${districtSlug}` where districtSlug is SLUGIFIED (lowercase, hyphens for spaces) — e.g. `district-selangor-petaling`, NOT `district-selangor-Petaling` as previously assumed
+  - District paths also have `data-slug` attribute = slugified name
+- Added zoom level state machine to Zustand store: `'national' | 'state' | 'district' | 'street'` + `showStreetCards` boolean
+- Updated `setSelectedState` / `setSelectedDistrict` actions to auto-update zoomLevel
+- Created `src/lib/districts.ts` viewBox helpers:
+  - `parseViewBox(svg)` — read current viewBox into `{x,y,w,h}`
+  - `slugifyDistrict(name)` — convert "Kota Bharu" → "kota-bharu"
+  - `findDistrictPath(svg, stateSlug, districtName)` — finds the `<path>` for a district by slugified ID or data-slug
+  - `computeDistrictViewBox(bbox, aspectRatio, paddingRatio)` — computes target viewBox with tight padding (8% for district, 3% for street)
+  - `animateViewBox(svg, target, durationMs, onUpdate)` — rAF-based cubic ease-out viewBox animator (mirrors krackedmaps' internal `i1()`)
+- Bug fixed: prior `findDistrictPath` used display name in ID lookup which never matched — now uses slugified name
+- Updated `src/components/MalaysiaMap.tsx`:
+  - Added district-zoom useEffect: when `selectedDistrict` changes, finds the district path and animates the SVG viewBox into it with 8% padding (vs krackedmaps' default 15%+8 for state focus). Retries up to 12×80ms while drillInto animation completes.
+  - Added street-zoom useEffect: when `zoomLevel === 'street'`, zooms even closer with 3% padding (≈3× closer than district view)
+  - Added district-shape click handler: clicking a district shape on the map (when drilled in) selects that district. Converts the slugified ID back to display name via STATE_DISTRICTS lookup so it matches what DistrictPanel stores.
+  - Updated label visibility: full labels shown at street zoom (always), district zoom (≤8 venues), state zoom (≤4 venues), national (≤4 venues)
+  - Added "Street view" toggle button (MapPinned icon) above zoom controls — only enabled when a district is selected
+  - Updated zoom in/out buttons to follow the layered zoom model (national→state→district→street)
+  - Added vertical zoom level indicator (ladder style) showing active level: MY / State / Distr / St with color coding
+  - Updated breadcrumb to include zoom-level icon + "Street" segment (green accent) + zoom factor (×N)
+  - Computed `streetZoomFactor` = nationalW / currentViewBox.w (e.g. ×26 at street level)
+- Created `src/components/StreetVenueCards.tsx`:
+  - Floating venue cards positioned next to each pin at street zoom
+  - Uses `inst.project(lng, lat)` → SVG user coords, then `svg.getScreenCTM()` → screen px
+  - MutationObserver on SVG viewBox attribute keeps cards pinned during animation
+  - Resize + scroll listeners for layout shifts
+  - 100ms polling interval as backup
+  - Cards show: emoji, name (2-line clamp), WiFi speed (color-coded), rating (stars), coffee price, area
+  - Connector triangle from card to pin (above or below based on pin position)
+  - Hover effect: scale 1.06× + gold border glow
+  - Left border colored by category (coworking/cafe/public/coliving)
+- Added extensive CSS to `src/app/globals.css`:
+  - `.street-view-active` with pulsing gold ring animation
+  - `svg .district` hover/active styles with cursor pointer + fill change
+  - `.district.is-active` with drop-shadow glow + 2.2s pulse animation
+  - `svg .pin .pin-dot/.pin-ring` transitions + hover pulse animation
+  - `.zoom-rung-active` glow
+  - `.street-card-enter` keyframes
+  - `.state-badge-glow.street-active` breadcrumb pulse
+- Performed QA via agent-browser:
+  - Clicked Selangor state pill → state drilled in with district boundaries visible
+  - Clicked Petaling district in DistrictPanel → map zoomed into Petaling (tighter than state view)
+  - Clicked Street View button → map zoomed to street level (×26 zoom factor!)
+  - Verified 4 floating venue cards rendered: Coffeebean Xchange (75 Mbps, 4.1★, Damansara Perdana), Common Ground Shah Alam (200 Mbps, 4.5★, Shah Alam), Common Ground Tropical City (198 Mbps, 4.4★, Petaling Jaya), Spaces Sunway (195 Mbps, 4.3★, Bandar Sunway)
+  - Breadcrumb confirmed: "Selangor / Petaling / Street 4 ×26"
+  - Map SVG viewBox: `113.29 220.11 30.28 13.35` (very tight crop)
+- VLM polish rating: 9/10 — all 5 verification checks PASS:
+  1. ✓ Deep street-level zoom
+  2. ✓ Floating venue cards with name + WiFi + rating
+  3. ✓ Breadcrumb with green "Street" accent
+  4. ✓ Vertical zoom level indicator
+  5. ✓ Polished dark navy + gold theme
+- ESLint: passes cleanly (0 errors, 0 warnings)
+- Dev log: no runtime errors
+
+Stage Summary:
+- **Bug fixed**: `findDistrictPath` was using display name in ID lookup; krackedmaps uses slugified names — now fixed
+- **New feature**: Deep district-level zoom via custom SVG viewBox animation (8% padding, ~2× closer than krackedmaps' state focus)
+- **New feature**: Street-level zoom (3% padding, ~3× closer than district, ~26× zoom factor vs national)
+- **New feature**: Floating venue cards at street zoom (positioned via SVG CTM, follow pins during animation)
+- **New feature**: Click district shape on map to select+zoom (was only possible via DistrictPanel before)
+- **New feature**: Vertical zoom level indicator (ladder style with active rung)
+- **New feature**: Layered zoom model (national→state→district→street) with smart +/- buttons
+- **New feature**: Zoom-level-aware pin labels (full labels at street zoom)
+- **New feature**: Breadcrumb with zoom-level icon + "Street" segment + zoom factor
+- **Files created**: src/components/StreetVenueCards.tsx
+- **Files modified**: src/lib/map-store.ts (zoomLevel + showStreetCards state), src/lib/districts.ts (viewBox helpers + slugifyDistrict + fixed findDistrictPath), src/components/MalaysiaMap.tsx (district zoom + street zoom + district click + zoom controls + zoom indicator + breadcrumb), src/app/globals.css (street view + district hover/active + pin hover animations)
+- **User request fully satisfied**: clicking a district now zooms the map in close so venue pins appear at accurate, spread-out positions; street-level zoom goes even closer with floating venue cards next to each pin
+
+## Current Project Status Assessment
+
+### Overall Health: ✅ STABLE & FEATURE-RICH — District + street-level zoom fully implemented
+
+### Completed Features (10 phases):
+1-9. (Previous phases — see prior worklog entries)
+10. **Deep district + street-level zoom** (this task):
+    - Custom SVG viewBox animator (rAF + cubic ease-out)
+    - District zoom: 8% padding (~2× closer than state focus)
+    - Street zoom: 3% padding (~3× closer than district, ~26× vs national)
+    - Floating venue cards at street zoom (positioned via SVG CTM)
+    - Click district shape on map to select+zoom
+    - Vertical zoom level indicator (ladder style)
+    - Layered zoom model with smart +/- buttons
+    - Zoom-level-aware pin labels
+    - Breadcrumb with zoom-level icon + segment + factor
+
+### Architecture:
+- Next.js 16 App Router + TypeScript 5
+- Tailwind CSS 4 + shadcn/ui + Framer Motion
+- Zustand for client state (now with zoomLevel + showStreetCards)
+- Prisma + SQLite for data (5 models)
+- krackedmaps for GIS rendering (now with custom viewBox animation on top)
+- 60 venues, 13 states, 32 districts
+
+### Unresolved Issues / Risks:
+1. **East Malaysia pins** — Sabah/Sarawak pins may still not render correctly on krackedmaps (focuses on Peninsular Malaysia). District zoom works for Peninsular states only.
+2. **Street card overlap** — When 4+ venues are very close geographically (e.g. all in Petaling Jaya), their floating cards may overlap. Could implement collision avoidance (offset cards, draw connector lines).
+3. **VLM "1 Issue" hallucination** — VLM consistently reports a red "1 Issue" notification that doesn't exist in the DOM. Likely misreading the green NetworkStatus "Online" indicator. No action needed.
+4. **ViewBox animation race** — If user clicks districts rapidly, multiple animations may queue. Mitigated by `cancelZoomRef` but could be smoother.
+5. **Initial map load** — On first load, `currentViewBox` is null until first zoom; street cards won't show until a viewBox change fires the MutationObserver.
+
+### Priority Recommendations for Next Phase:
+1. **P1**: Street card collision avoidance — offset overlapping cards with connector lines (Apple Maps style)
+2. **P1**: Persist zoom level in URL (deep-linkable state for sharing)
+3. **P2**: Add real venue images to street cards (currently text-only)
+4. **P2**: Touch/gesture support for pinch-to-zoom on mobile
+5. **P2**: Mini-map overview when zoomed in deep (showing where in Malaysia you are)
+6. **P3**: Animated fly-to transitions between distant districts
+7. **P3**: Heatmap overlay at street level (show Wi-Fi coverage areas)

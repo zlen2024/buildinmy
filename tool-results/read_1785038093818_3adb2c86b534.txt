@@ -1381,3 +1381,147 @@
   1381→6. **P3**: Real-time collaboration feature (WebSocket) for shared workspace discovery
   1382→7. **P3**: Performance optimization — lazy load components outside viewport, memoize expensive computations
   1383→
+  1384→---
+  1385→Task ID: 7a
+  1386→Agent: general-purpose
+  1387→Task: Expand seed data with venues in different districts
+  1388→
+  1389→Work Log:
+  1390→- Read worklog.md and prisma/seed.ts to understand the existing data structure (40 venues across 12 states, mostly clustered in single districts per state)
+  1391→- Read prisma/schema.prisma to confirm `district` field on Location and `operatingHours` field on WorkProfile already exist
+  1392→- Surveyed existing district coverage via grep — found Selangor only had "Petaling", Johor only "Johor Bahru"+"Muar", Penang only "Timur Laut", Sabah only "Kota Kinabalu"+"Sandakan", Sarawak only "Miri", Negeri Sembilan only "Seremban", Pahang only "Kuantan", and Perak was missing entirely
+  1393→- Added 20 new venues to the `locations` array in `prisma/seed.ts`, each with realistic Malaysian names, real coordinates, unique `googlePlaceId` (ChIJ-prefixed), `operatingHours`, varying Wi-Fi (35-300 Mbps), coffee prices 8-15 MYR, and realistic transit info where applicable
+  1394→- Districts covered by new venues (17 unique new districts):
+  1395→  - Selangor: Klang (Klang Town, Port Klang), Gombak (Batu Caves), Ulu Langat (Cheras, Kajang), Sepang (Cyberjaya)
+  1396→  - Johor: Kulaijaya (Kulai), Batu Pahat, Kluang
+  1397→  - Penang: Seberang Perai Tengah (Bukit Mertajam), Seberang Perai Utara (Butterworth)
+  1398→  - Sabah: Tawau, Penampang (Donggongon)
+  1399→  - Sarawak: Kuching (Kuching City), Bintulu
+  1400→  - Negeri Sembilan: Port Dickson
+  1401→  - Pahang: Cameron Highlands (Tanah Rata, Brinchang)
+  1402→  - Perak (NEW STATE): Kinta (Ipoh), Manjung (Sitiawan)
+  1403→- Used real/famous venue names where possible: Kluang Rail Coffee (heritage railway station cafe), Burps and Giggles Ipoh (Old Town Ipoh), Black Bean Bistro Kuching (Carpenter Street), Cameron Valley Tea House (Brinchang tea plantation), Barrington Cafe (Tanah Rata), Old Town White Coffee (Klang South, IOI Kulai)
+  1404→- Ran `bunx tsx prisma/seed.ts` — seeded 60 locations successfully (40 original + 20 new) across 13 states (added Perak)
+  1405→- Ran `bun run lint` — passes cleanly with 0 errors, 0 warnings
+  1406→- Did NOT modify Prisma schema, did NOT change any existing venues, did NOT install any new packages
+  1407→
+  1408→Stage Summary:
+  1409→- Added 20 new venues across 17 new districts (plus 1 new state: Perak)
+  1410→- Total venues now: 60 (up from 40)
+  1411→- Total states now: 13 (added Perak)
+  1412→- New district coverage: Selangor (4 new: Klang, Gombak, Ulu Langat, Sepang), Johor (3 new: Kulaijaya, Batu Pahat, Kluang), Penang (2 new: Seberang Perai Tengah, Seberang Perai Utara), Sabah (2 new: Tawau, Penampang), Sarawak (2 new: Kuching, Bintulu), Negeri Sembilan (1 new: Port Dickson), Pahang (1 new: Cameron Highlands), Perak (2 new: Kinta, Manjung)
+  1413→- All venues have realistic coordinates, unique googlePlaceId, operatingHours set, Wi-Fi 35-300 Mbps, coffee 8-15 MYR
+  1414→- ESLint passes clean (0 errors, 0 warnings)
+  1415→- Ready for district-level zoom feature demonstration in krackedmaps
+  1416→
+  1417→---
+  1418→Task ID: 7c
+  1419→Agent: main-agent
+  1420→Task: District-level zoom implementation + bug fixes + new features + styling polish
+  1421→
+  1422→Work Log:
+  1423→- Reviewed worklog.md to understand prior project state (Phase 8 stable, 8 phases complete, 48 venues, krackedmaps district API available but unused)
+  1424→- Investigated krackedmaps `index.d.ts` — discovered `drillInto()`, `selectDistrict()`, `DISTRICTS` array, `distByState` Map (district-level zoom APIs were available but unused)
+  1425→- Inspected `krackedmaps-districts.geojson` — 159 districts across 15 states. Mapped 32 districts to existing venue locations.
+  1426→- Fixed timezone bug: `checkIfOpen()` in VenueList.tsx and `isVenueOpen()` in VenueDrawer.tsx used `new Date().getHours()` which returns server/browser local time (UTC in sandbox). Replaced with `Intl.DateTimeFormat` with `timeZone: 'Asia/Kuala_Lumpur'` to always use Malaysia time. Venues now correctly show "Open" during Malaysian business hours.
+  1427→- Added `district` field to Prisma `Location` model (optional String)
+  1428→- Updated `prisma/seed.ts` — added `district:` field to all 40 original venues using a Python script that mapped (state, area) → district name based on krackedmaps district names. E.g.:
+  1429→  - Selangor / Petaling Jaya → "Petaling"
+  1430→  - Penang / Georgetown → "Timur Laut"
+  1431→  - Johor / Johor Bahru City → "Johor Bahru"
+  1432→  - Sabah / Kota Kinabalu → "Kota Kinabalu"
+  1433→  - Pahang / Kuantan → "Kuantan"
+  1434→- Ran `bun run db:push` + `bunx tsx prisma/seed.ts` to apply schema and seed
+  1435→- Updated API routes to expose `district` field: `src/app/api/places/route.ts`, `src/app/api/places/[id]/route.ts`, `src/app/api/export/route.ts` (added District column to CSV export)
+  1436→- Updated `LocationPin` type in `src/lib/map-store.ts` to include `district: string | null`
+  1437→- Added `selectedDistrict` filter logic to `useFilteredLocations()` selector
+  1438→- Created `src/lib/districts.ts` with:
+  1439→  - `STATE_DISTRICTS` map (state slug → array of krackedmaps district names)
+  1440→  - `getDistrictSlug()` reverse lookup helper
+  1441→  - `getDistrictSummaries()` — computes per-district venue count, avg Wi-Fi, top category
+  1442→- Created `src/components/DistrictPanel.tsx` — floating district selector panel (top-left of map, shown when state is selected). Lists districts with venue count, avg Wi-Fi, top category emoji. Click to filter.
+  1443→- Updated `src/components/MalaysiaMap.tsx`:
+  1444→  - Fixed `customTheme` to use krackedmaps' ACTUAL CSS variable names (`--sea`, `--land`, `--district`, `--district-hi`, `--carve`, etc.) instead of non-existent `--km-*` names. This makes the dark gold theme actually apply.
+  1445→  - Added `drillInto(stateSlug)` call when state is selected — triggers krackedmaps' built-in drill-down view (dims other states, shows district boundaries within selected state)
+  1446→  - Added `selectDistrict(key)` call when district is selected — highlights specific district on the map
+  1447→  - Added `drill` event listener to track drill state. Note: krackedmaps emits `drill` with payload = state slug string (not object), so handler uses `typeof payload === "string"` check.
+  1448→  - Added bottom-center breadcrumb showing "STATE / District N" context
+  1449→  - Added drill controls (Exit zoom / All districts) when drilled in
+  1450→  - Smart pin label visibility: 'full' when ≤4 pins, 'hidden' otherwise (avoids overlap). District view also uses 'hidden' to prevent clutter; hover tooltips provide context instead.
+  1451→- Added new map UI features in MalaysiaMap:
+  1452→  - **Map zoom controls** (bottom-right): + (focus selected state), − (exit state), ⊕ (reset all filters). Glass-card with Lucide icons (Plus, Minus, LocateFixed) and hover animations.
+  1453→  - **Pin density indicator** (top-right below legend): 4-bar chart + label (Sparse/Moderate/Dense/Very Dense) color-coded green→red based on visibleLocations.length.
+  1454→  - **Coordinate + scale display** (bottom-left): Shows hovered pin lat/lng or map center region + scale bar (200km national / 20km regional).
+  1455→  - **Legend collapse toggle**: ChevronDown button in legend header collapses/expands the legend panel with smooth Framer Motion height animation.
+  1456→- Created `src/components/DistrictCompareModal.tsx` — side-by-side district comparison modal triggered by BarChart3 button in DistrictPanel header (only shown when state has ≥2 districts). Displays each district's: venue count (with bar), avg Wi-Fi (with color-coded bar), top category, "Most venues" / "Fastest Wi-Fi" badges. Click a district to filter the map.
+  1457→- Added `showDistrictCompare` state + `setShowDistrictCompare` action to Zustand store
+  1458→- Updated `src/components/StateHeatmap.tsx` — selected state pill now has gold ring (inset shadow + outer glow) via Framer Motion `layoutId` for smooth transitions
+  1459→- Added keyboard shortcut **D** to toggle Wi-Fi heatmap (in page.tsx keyboard handler + KeyboardShortcuts overlay)
+  1460→- Delegated seed expansion to subagent (Task 7a) — added 20 new venues across 17 new districts + new state (Perak). Total venues now: 60 across 13 states and 32 districts.
+  1461→- Added extensive CSS to `src/app/globals.css`: `.district-panel-glow`, `.district-row-active`, `.custom-scrollbar-thin`, `.km-district` hover effect, `@keyframes breadcrumbPulse`, `.pin-cluster-glow`, `@keyframes mapZoomIn`, `@keyframes venueRipple`, `.pin-ripple`, `.pin-selected`, `.district-badge`, `@keyframes wifiBarFill`, `.wifi-bar-fill`, `.scroll-progress-glow`, `.hover-lift`, `.map-radial-vignette`, `@keyframes starTwinkle`, `.map-scale-bar`, `.search-input-glow`, `@keyframes tabIndicatorSlide`, `.tab-indicator`
+  1462→- Performed QA via agent-browser: clicked Selangor state pill → DistrictPanel appeared with 5 districts (Petaling 4 venues, Klang 2, Ulu Langat 2, Gombak 1, Sepang 1). Clicked Petaling → map drilled into Selangor with district boundaries visible, breadcrumb showed "SELANGOR / Petaling 4". Tested District Compare Modal — opened with 5 districts side-by-side, "Most venues" badge on Petaling.
+  1463→- VLM polish rating: 9/10 on Petaling district view, 8.5/10 on overview
+  1464→- Verified timezone fix: 23 venues showing "Open" at 11:07 AM Malaysian time
+  1465→
+  1466→Stage Summary:
+  1467→- **Bug fixed**: Timezone issue in checkIfOpen/isVenueOpen (now uses Asia/Kuala_Lumpur)
+  1468→- **Bug fixed**: Custom map theme used wrong CSS variable names (--km-* → actual krackedmaps vars)
+  1469→- **Bug fixed**: Pin label overlap (smart label visibility based on density)
+  1470→- **New feature**: District-level zoom (drillInto + selectDistrict + DistrictPanel)
+  1471→- **New feature**: District Compare Modal (side-by-side comparison)
+  1472→- **New feature**: Map zoom controls (+/−/reset)
+  1473→- **New feature**: Pin density indicator with bar chart
+  1474→- **New feature**: Coordinate + scale bar display
+  1475→- **New feature**: Legend collapse toggle
+  1476→- **New feature**: Keyboard shortcut 'D' for Wi-Fi heatmap
+  1477→- **New feature**: State pills gold ring for selected state
+  1478→- **Data expanded**: 40 → 60 venues, 12 → 13 states, ~7 → 32 districts
+  1479→- **Files created**: src/lib/districts.ts, src/components/DistrictPanel.tsx, src/components/DistrictCompareModal.tsx
+  1480→- **Files modified**: prisma/schema.prisma, prisma/seed.ts, src/lib/map-store.ts, src/components/MalaysiaMap.tsx, src/components/VenueList.tsx, src/components/VenueDrawer.tsx, src/components/StateHeatmap.tsx, src/components/KeyboardShortcuts.tsx, src/app/page.tsx, src/app/api/places/route.ts, src/app/api/places/[id]/route.ts, src/app/api/export/route.ts, src/app/globals.css
+  1481→- **Lint**: passes cleanly (0 errors, 0 warnings)
+  1482→- **QA**: page loads at http://localhost:3000/ (HTTP 200), district drill-in works, compare modal works, no runtime errors in dev log
+  1483→- **VLM polish**: 8.5/10 (district view), 9/10 (Petaling district selected)
+  1484→
+  1485→## Current Project Status Assessment
+  1486→
+  1487→### Overall Health: ✅ STABLE & FEATURE-RICH — District-level zoom successfully implemented
+  1488→
+  1489→### Completed Features (9 phases):
+  1490→1-8. (Previous phases — see prior worklog entries)
+  1491→9. **District-level zoom** (this task):
+  1492→   - District data model + 60 venues across 32 districts
+  1493→   - krackedmaps drillInto + selectDistrict integration
+  1494→   - DistrictPanel UI with venue count, Wi-Fi, top category per district
+  1495→   - District Compare Modal with side-by-side metrics
+  1496→   - Map zoom controls, pin density indicator, coordinate display, scale bar
+  1497→   - Legend collapse toggle, keyboard shortcut 'D'
+  1498→   - State pills gold ring for selected state
+  1499→   - Fixed timezone bug (Malaysia UTC+8)
+  1500→   - Fixed custom theme CSS variables
+  1501→   - Fixed pin label overlap with smart visibility
+  1502→
+  1503→### Architecture:
+  1504→- Next.js 16 App Router + TypeScript 5
+  1505→- Tailwind CSS 4 + shadcn/ui + Framer Motion
+  1506→- Zustand for client state (persisted: favorites, locale)
+  1507→- Prisma + SQLite for data (5 models: Location, WorkProfile, WifiMetric, VenueCost, TransitAccess)
+  1508→- krackedmaps for GIS rendering (now using full district-level API)
+  1509→- 60 venues, 13 states, 32 districts
+  1510→
+  1511→### Unresolved Issues / Risks:
+  1512→1. **East Malaysia pins** — Sabah/Sarawak pins may still not render correctly on krackedmaps (focuses on Peninsular Malaysia). The drill-down works for Peninsular states but Sabah/Sarawak may show as dimmed.
+  1513→2. **Pin clustering** — Not implemented. When zoomed out, dense areas (KL) still show many overlapping pins. Smart label hiding helps but visual clustering would be better.
+  1514→3. **Light theme** — Dark theme fully polished; light theme needs complete redesign.
+  1515→4. **"1 Issue" badge** — VLM reports a red "1 Issue" notification in some screenshots but no such element exists in the DOM. Likely a VLM misinterpretation of the green "Online" NetworkStatus indicator.
+  1516→5. **District selection on map click** — Currently districts can only be selected via the DistrictPanel UI, not by clicking district shapes on the map directly. Could add this via krackedmaps' `select` event payload (which may include district info when in drilled view).
+  1517→
+  1518→### Priority Recommendations for Next Phase:
+  1519→1. **P1**: Add pin clustering for zoomed-out view (combine nearby pins into a single cluster pin with count badge)
+  1520→2. **P1**: Implement click-on-district-shape to select district (not just via DistrictPanel)
+  1521→3. **P2**: Add real venue images (currently using placeholder gradients in VenueDrawer)
+  1522→4. **P2**: Add user authentication (NextAuth.js) for personalized favorites + venue submissions
+  1523→5. **P2**: Add community reviews/ratings system (crowd-sourced Wi-Fi speed tests, photos, comments)
+  1524→6. **P3**: Real-time collaboration (WebSocket) for shared workspace discovery
+  1525→7. **P3**: PWA support (offline access, install prompt)
+  1526→8. **P3**: Performance optimization — lazy load components, memoize expensive computations
+  1527→
