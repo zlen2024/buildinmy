@@ -44,6 +44,7 @@ export async function GET(
       formattedAddress: location.formattedAddress,
       category: location.category,
       state: location.state,
+      district: location.district,
       area: location.area,
       latitude: location.latitude,
       longitude: location.longitude,

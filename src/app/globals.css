@@ -1283,3 +1283,280 @@
 .compare-best-cell {
   position: relative;
 }
+
+/* ============================================================
+   District Panel — District-level zoom UI
+   ============================================================ */
+
+.district-panel-glow {
+  box-shadow:
+    0 8px 24px -8px rgba(0, 0, 0, 0.4),
+    0 4px 8px -4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 0 rgba(224, 201, 127, 0.08),
+    0 0 0 1px rgba(224, 201, 127, 0.06),
+    0 0 32px -8px rgba(224, 201, 127, 0.18);
+}
+
+.district-row-active {
+  position: relative;
+  background: linear-gradient(135deg, rgba(224, 201, 127, 0.12), rgba(224, 201, 127, 0.04));
+}
+
+.district-row-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: #e0c97f;
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(224, 201, 127, 0.6);
+}
+
+/* Custom thin scrollbar for district panel & small scroll areas */
+.custom-scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(224, 201, 127, 0.15);
+  border-radius: 2px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(224, 201, 127, 0.3);
+}
+.custom-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(224, 201, 127, 0.15) transparent;
+}
+
+/* ============================================================
+   Pin Density Heatmap Dots — tiny dots scattered on the map for ambiance
+   ============================================================ */
+
+@keyframes pinDensityPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.4);
+  }
+}
+
+/* ============================================================
+   District hover effect — for krackedmaps district paths
+   We override .km-district via CSS variables for richer hover state.
+   ============================================================ */
+
+.km-district {
+  transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
+}
+
+.km-district:hover {
+  filter: drop-shadow(0 0 4px rgba(224, 201, 127, 0.5));
+}
+
+/* Breadcrumb pulse — for the state/district context strip */
+@keyframes breadcrumbPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(224, 201, 127, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px rgba(224, 201, 127, 0.18);
+  }
+}
+
+.state-badge-glow {
+  animation: breadcrumbPulse 4s ease-in-out infinite;
+}
+
+/* ============================================================
+   Pin Cluster — for dense areas (when many pins overlap)
+   ============================================================ */
+
+.pin-cluster-glow {
+  filter: drop-shadow(0 0 6px rgba(233, 69, 96, 0.6));
+}
+
+/* ============================================================
+   Map zoom-in animation enhancement
+   ============================================================ */
+
+@keyframes mapZoomIn {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.4;
+    filter: blur(4px);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.km-svg-container {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================
+   Detailed pin ripple effect — for selected venue
+   ============================================================ */
+
+@keyframes venueRipple {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.pin-ripple {
+  animation: venueRipple 1.5s ease-out infinite;
+}
+
+/* ============================================================
+   Selected venue pin glow + ring
+   ============================================================ */
+
+.pin-selected {
+  filter: drop-shadow(0 0 8px rgba(224, 201, 127, 0.9)) drop-shadow(0 0 16px rgba(224, 201, 127, 0.5));
+}
+
+/* ============================================================
+   District badge tag — small chip shown for district info
+   ============================================================ */
+
+.district-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(224, 201, 127, 0.12), rgba(224, 201, 127, 0.04));
+  border: 1px solid rgba(224, 201, 127, 0.25);
+  font-size: 10px;
+  color: rgba(224, 201, 127, 0.85);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   Wi-Fi heatmap bars — animated fill
+   ============================================================ */
+
+@keyframes wifiBarFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.wifi-bar-fill {
+  transform-origin: left;
+  animation: wifiBarFill 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================
+   Scroll progress bar — at top of drawer
+   ============================================================ */
+
+.scroll-progress-glow {
+  box-shadow: 0 0 8px rgba(224, 201, 127, 0.6), 0 0 16px rgba(224, 201, 127, 0.3);
+}
+
+/* ============================================================
+   Hover lift effect for cards
+   ============================================================ */
+
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.4), 0 4px 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================
+   Map container — subtle radial dark vignette
+   ============================================================ */
+
+.map-radial-vignette {
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(10, 10, 15, 0.5) 100%),
+    radial-gradient(ellipse at top, rgba(224, 201, 127, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ============================================================
+   Starfield twinkle — for starfield background
+   ============================================================ */
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* ============================================================
+   Mini map scale bar — for the bottom-left scale indicator
+   ============================================================ */
+
+.map-scale-bar {
+  position: relative;
+  background: linear-gradient(90deg,
+    rgba(224, 201, 127, 0.6) 0%,
+    rgba(224, 201, 127, 0.6) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(224, 201, 127, 0.6) 50%,
+    rgba(224, 201, 127, 0.6) 75%,
+    transparent 75%
+  );
+}
+
+/* ============================================================
+   Search input focus glow ring
+   ============================================================ */
+
+.search-input-glow:focus {
+  box-shadow:
+    0 0 0 2px rgba(224, 201, 127, 0.15),
+    0 0 16px rgba(224, 201, 127, 0.2);
+}
+
+/* ============================================================
+   Tab indicator slide animation
+   ============================================================ */
+
+@keyframes tabIndicatorSlide {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.tab-indicator {
+  animation: tabIndicatorSlide 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+

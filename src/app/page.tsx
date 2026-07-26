@@ -16,6 +16,7 @@ import { CompareFloatingBar } from "@/components/CompareFloatingBar";
 import { AIChatAssistant } from "@/components/AIChatAssistant";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { VenueCompareModal } from "@/components/VenueCompareModal";
+import { DistrictCompareModal } from "@/components/DistrictCompareModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useMapStore, type LocationPin } from "@/lib/map-store";
 import { Loader2 } from "lucide-react";
@@ -34,6 +35,7 @@ function HomePage() {
   const setSearchQuery = useMapStore((s) => s.setSearchQuery);
   const toggleFavorite = useMapStore((s) => s.toggleFavorite);
   const toggleCategory = useMapStore((s) => s.toggleCategory);
+  const toggleWifiHeatmap = useMapStore((s) => s.toggleWifiHeatmap);
   const favoriteIds = useMapStore((s) => s.favoriteIds);
   const locations = useMapStore((s) => s.locations);
 
@@ -110,11 +112,17 @@ function HomePage() {
           e.preventDefault();
           toggleCategory("coliving");
           break;
+        case "d":
+        case "D":
+          if (e.ctrlKey || e.metaKey) return;
+          e.preventDefault();
+          toggleWifiHeatmap();
+          break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedVenue, setSelectedVenue, sidebarOpen, setSidebarOpen, toggleCategory]);
+  }, [selectedVenue, setSelectedVenue, sidebarOpen, setSidebarOpen, toggleCategory, toggleWifiHeatmap]);
 
   // Determine panel content based on active nav
   const renderPanelContent = () => {
@@ -212,6 +220,9 @@ function HomePage() {
 
       {/* Venue Compare Modal */}
       <VenueCompareModal />
+
+      {/* District Compare Modal */}
+      <DistrictCompareModal />
 
       {/* Keyboard Shortcuts Overlay */}
       <KeyboardShortcuts />

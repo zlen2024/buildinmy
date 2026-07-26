@@ -12,6 +12,7 @@ const SHORTCUTS: Shortcut[] = [
   { key: "/", description: "Focus search" },
   { key: "Esc", description: "Close panel / drawer" },
   { key: "F", description: "Toggle sidebar" },
+  { key: "D", description: "Toggle Wi-Fi heatmap" },
   { key: "?", description: "Show keyboard shortcuts" },
   { key: "1", description: "Filter: Coworking" },
   { key: "2", description: "Filter: Work Cafe" },

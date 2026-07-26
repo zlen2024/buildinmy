@@ -20,6 +20,7 @@ export interface LocationPin {
   formattedAddress: string
   category: VenueCategory
   state: string
+  district: string | null
   area: string
   latitude: number
   longitude: number
@@ -80,6 +81,8 @@ interface MapState {
   locale: Locale
   // Wi-Fi heatmap mode
   showWifiHeatmap: boolean
+  // District compare modal visibility
+  showDistrictCompare: boolean
 
   // Actions
   setSelectedState: (state: string | null) => void
@@ -108,6 +111,7 @@ interface MapState {
   // Wi-Fi heatmap toggle
   setShowWifiHeatmap: (show: boolean) => void
   toggleWifiHeatmap: () => void
+  setShowDistrictCompare: (show: boolean) => void
 }
 
 const defaultFilters = {
@@ -140,8 +144,9 @@ export const useMapStore = create<MapState>()(
       showCompareModal: false,
       locale: 'en' as Locale,
       showWifiHeatmap: false,
+      showDistrictCompare: false,
 
-      setSelectedState: (state) => set({ selectedState: state }),
+      setSelectedState: (state) => set({ selectedState: state, selectedDistrict: null }),
       setSelectedDistrict: (district) => set({ selectedDistrict: district }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       toggleCategory: (category) =>
@@ -184,6 +189,7 @@ export const useMapStore = create<MapState>()(
       setLocale: (locale) => set({ locale }),
       setShowWifiHeatmap: (show) => set({ showWifiHeatmap: show }),
       toggleWifiHeatmap: () => set((state) => ({ showWifiHeatmap: !state.showWifiHeatmap })),
+      setShowDistrictCompare: (show) => set({ showDistrictCompare: show }),
     }),
     {
       name: 'nomadmy-storage',
@@ -199,6 +205,7 @@ export const useMapStore = create<MapState>()(
 export function useFilteredLocations(): LocationPin[] {
   const locations = useMapStore((s) => s.locations)
   const selectedState = useMapStore((s) => s.selectedState)
+  const selectedDistrict = useMapStore((s) => s.selectedDistrict)
   const activeCategories = useMapStore((s) => s.activeCategories)
   const minWifiSpeed = useMapStore((s) => s.minWifiSpeed)
   const highPowerSockets = useMapStore((s) => s.highPowerSockets)
@@ -225,6 +232,9 @@ export function useFilteredLocations(): LocationPin[] {
       }
       const stateSlugs = stateMap[loc.state] || []
       if (!stateSlugs.includes(selectedState)) return false
+
+      // District filter (only when state is selected)
+      if (selectedDistrict && loc.district !== selectedDistrict) return false
     }
 
     // Category filter

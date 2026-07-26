@@ -16,6 +16,7 @@ model Location {
   formattedAddress String
   category        String   @default("cafe") // cafe, coworking, public_space, coliving
   state           String   // e.g., 'Kuala Lumpur', 'Penang', 'Sabah'
+  district        String?  // e.g., 'Petaling', 'Timur Laut', 'Johor Bahru' — krackedmaps district name
   area            String   // e.g., 'Mont Kiara', 'Georgetown'
   latitude        Float    // WGS 84 latitude
   longitude       Float   // WGS 84 longitude

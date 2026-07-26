@@ -509,18 +509,47 @@ function SectionDivider() {
   );
 }
 
-/** Open/closed checker based on hours string */
+/** Open/closed checker based on hours string. Uses Malaysia time (Asia/Kuala_Lumpur). */
 function isVenueOpen(hours: string): boolean {
-  const now = new Date();
-  const hour = now.getHours();
-  const minutes = now.getMinutes();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    hour: '2-digit', minute: '2-digit', weekday: 'short',
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+  let hour = parseInt(get('hour'));
+  if (hour === 24) hour = 0;
+  const minutes = parseInt(get('minute'));
   const currentMinutes = hour * 60 + minutes;
+  const weekdayStr = get('weekday').toLowerCase();
+  const dayMap: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+  const day = dayMap[weekdayStr] ?? 0;
 
+  // Simple format: "8:00-22:00"
   const simpleMatch = hours.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
   if (simpleMatch) {
     const openMin = parseInt(simpleMatch[1]) * 60 + parseInt(simpleMatch[2]);
     const closeMin = parseInt(simpleMatch[3]) * 60 + parseInt(simpleMatch[4]);
     return currentMinutes >= openMin && currentMinutes < closeMin;
+  }
+
+  // Complex format: "9:00-18:00 Mon-Fri 10:00-20:00 Sat-Sun"
+  const parts2 = hours.split(/\s+/);
+  if (parts2.length >= 3) {
+    const rangeMatch = parts2[0].match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (rangeMatch) {
+      const openMin = parseInt(rangeMatch[1]) * 60 + parseInt(rangeMatch[2]);
+      const closeMin = parseInt(rangeMatch[3]) * 60 + parseInt(rangeMatch[4]);
+      const daysPart = parts2.slice(1).join(' ').toLowerCase();
+      const isWeekday = day >= 1 && day <= 5;
+      const isWeekend = day === 0 || day === 6;
+      if ((daysPart.includes('mon-fri') || daysPart.includes('weekday')) && isWeekday) {
+        return currentMinutes >= openMin && currentMinutes < closeMin;
+      }
+      if ((daysPart.includes('sat-sun') || daysPart.includes('weekend')) && isWeekend) {
+        return currentMinutes >= openMin && currentMinutes < closeMin;
+      }
+    }
   }
   return true;
 }

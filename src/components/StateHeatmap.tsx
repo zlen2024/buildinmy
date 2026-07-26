@@ -68,18 +68,32 @@ export function StateHeatmap() {
               setSelectedState(selectedState === data.slug ? null : data.slug)
             }
             className={cn(
-              "relative rounded-lg p-2 border transition-all duration-200 flex flex-col items-center justify-center min-h-[44px]",
+              "relative rounded-lg p-2 border transition-all duration-200 flex flex-col items-center justify-center min-h-[44px] overflow-hidden",
               selectedState === data.slug
-                ? "border-[#e0c97f]/40 shadow-sm shadow-[#e0c97f]/10"
-                : "border-[#e0c97f]/8 hover:border-[#e0c97f]/15"
+                ? "border-[#e0c97f]/50 shadow-[0_0_12px_rgba(224,201,127,0.25)] bg-[#e0c97f]/8"
+                : "border-[#e0c97f]/8 hover:border-[#e0c97f]/20"
             )}
             style={{
-              backgroundColor: `rgba(224, 201, 127, ${0.03 + data.intensity * 0.12})`,
+              backgroundColor:
+                selectedState === data.slug
+                  ? undefined
+                  : `rgba(224, 201, 127, ${0.03 + data.intensity * 0.12})`,
             }}
             title={`${data.state}: ${data.count} venues`}
           >
+            {/* Selected state gold ring */}
+            {selectedState === data.slug && (
+              <motion.div
+                layoutId="selected-state-ring"
+                className="absolute inset-0 rounded-lg pointer-events-none"
+                style={{
+                  boxShadow:
+                    "inset 0 0 0 1px rgba(224,201,127,0.4), 0 0 16px rgba(224,201,127,0.18)",
+                }}
+              />
+            )}
             {/* Glow for top states */}
-            {data.intensity > 0.7 && (
+            {data.intensity > 0.7 && selectedState !== data.slug && (
               <div
                 className="absolute inset-0 rounded-lg opacity-20"
                 style={{
