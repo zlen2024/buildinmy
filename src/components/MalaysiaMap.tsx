@@ -116,6 +116,28 @@ export function MalaysiaMap() {
     mapInstanceRef.current = map;
     queueMicrotask(() => setMapReady(true));
 
+    // Dynamic pin scaling on map zoom:
+    // Calculates ratio between current viewBox width and baseline (800)
+    // so pins scale down during State and District zoom animations while staying
+    // precisely anchored at their exact geographical locations.
+    const updatePinScale = () => {
+      if (!map.svg) return;
+      const vbStr = map.svg.getAttribute("viewBox");
+      if (!vbStr) return;
+      const parts = vbStr.split(/[\s,]+/).map(Number);
+      const w = parts[2];
+      if (w && w > 0) {
+        const pinScale = Math.min(1.0, Math.max(0.04, w / 800));
+        map.svg.style.setProperty("--pin-scale", pinScale.toFixed(4));
+      }
+    };
+
+    const observer = new MutationObserver(updatePinScale);
+    if (map.svg) {
+      observer.observe(map.svg, { attributes: true, attributeFilter: ["viewBox"] });
+      updatePinScale();
+    }
+
     // Handle state selection
     map.on("select", (payload: StateSelectPayload) => {
       if (payload.slug) {
@@ -140,6 +162,7 @@ export function MalaysiaMap() {
     });
 
     return () => {
+      observer.disconnect();
       if (map && typeof map.destroy === "function") {
         map.destroy();
       }

@@ -1622,8 +1622,18 @@ svg.drilled .district.is-active {
 }
 
 /* ============================================================
-   Pin scaling at street zoom — make pins more prominent
+   Pin scaling on map zoom — counter-scales pins dynamically so
+   they stay small, sharp, and precise at exact map coordinates
    ============================================================ */
+
+svg .pin > circle,
+svg .pin > text,
+svg .pin > path {
+  transform: scale(var(--pin-scale, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.12s ease-out;
+}
 
 svg .pin .pin-dot {
   transition: r 0.25s ease, fill 0.25s ease;
@@ -1635,11 +1645,11 @@ svg .pin .pin-ring {
 
 svg .pin:hover .pin-dot {
   fill: #fff;
+  transform: scale(calc(var(--pin-scale, 1) * 1.3));
 }
 
 svg .pin:hover .pin-ring {
-  opacity: 0.7;
-  animation: pinRingPulse 0.8s ease-out infinite;
+  opacity: 0.75;
 }
 
 @keyframes pinRingPulse {
