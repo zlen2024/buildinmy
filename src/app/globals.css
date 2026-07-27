@@ -1626,69 +1626,37 @@ svg.drilled .district.is-active {
    they stay small, sharp, and precise at exact map coordinates
    ============================================================ */
 
+/* Hide the SVG pin-ring pulse wave to prevent giant screen-wide concentric circles */
+.mmap .pin-ring {
+  display: none !important;
+}
+
 .mmap .pin-dot {
   fill: var(--pin, #e94560);
   stroke: #ffffff;
   stroke-width: calc(1.2px * var(--pin-scale, 1));
-  transform: scale(calc(var(--pin-scale, 1) * 1.3));
-  transform-box: fill-box;
-  transform-origin: center;
+  transform: scale(calc(var(--pin-scale, 1) * 1.2));
+  transform-origin: 0 0;
   transition: transform 0.15s ease-out;
   cursor: pointer;
 }
 
-.mmap .pin-ring {
-  fill: none;
-  stroke: var(--pin-ring, rgba(233, 69, 96, 0.45));
-  stroke-width: calc(1.5px * var(--pin-scale, 1));
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: mmap-pulse 2.2s ease-out infinite;
-  pointer-events: none;
+.mmap .pin:hover .pin-dot {
+  fill: #ffffff;
+  transform: scale(calc(var(--pin-scale, 1) * 1.6));
 }
 
 .mmap .pin-label {
   fill: #ffffff;
-  font-size: calc(9px * var(--pin-scale, 1));
+  font-size: calc(9.5px * var(--pin-scale, 1));
   font-weight: 600;
   text-anchor: middle;
   paint-order: stroke;
   stroke: rgba(10, 10, 15, 0.85);
   stroke-width: calc(2.4px * var(--pin-scale, 1));
-  transform: translateY(calc(7px - 11px * var(--pin-scale, 1)));
+  transform: translateY(calc(7px - 10px * var(--pin-scale, 1)));
   transform-origin: 0 0;
   pointer-events: none;
-}
-
-.mmap .pin:hover .pin-dot {
-  fill: #ffffff;
-  transform: scale(calc(var(--pin-scale, 1) * 1.8));
-}
-
-@keyframes mmap-pulse {
-  0% {
-    transform: scale(calc(var(--pin-scale, 1) * 0.4));
-    opacity: 0.8;
-  }
-  70% {
-    transform: scale(calc(var(--pin-scale, 1) * 1.8));
-    opacity: 0;
-  }
-  100% {
-    transform: scale(calc(var(--pin-scale, 1) * 1.8));
-    opacity: 0;
-  }
-}
-
-@keyframes pinRingPulse {
-  0% {
-    transform: scale(var(--pin-scale, 1));
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(calc(var(--pin-scale, 1) * 1.8));
-    opacity: 0;
-  }
 }
 
 /* ============================================================
