@@ -1647,16 +1647,16 @@ svg.drilled .district.is-active {
 }
 
 .mmap .pin-label {
-  fill: #ffffff;
-  font-size: calc(9.5px * var(--pin-scale, 1));
-  font-weight: 600;
-  text-anchor: middle;
-  paint-order: stroke;
-  stroke: rgba(10, 10, 15, 0.85);
-  stroke-width: calc(2.4px * var(--pin-scale, 1));
-  transform: translateY(calc(7px - 10px * var(--pin-scale, 1)));
-  transform-origin: 0 0;
-  pointer-events: none;
+  fill: #ffffff !important;
+  font-size: calc(8px * var(--pin-scale, 1)) !important;
+  font-weight: 600 !important;
+  text-anchor: middle !important;
+  paint-order: stroke !important;
+  stroke: rgba(10, 10, 15, 0.9) !important;
+  stroke-width: calc(2px * var(--pin-scale, 1)) !important;
+  transform: translateY(calc(7px * (1 - var(--pin-scale, 1)) - 8px * var(--pin-scale, 1))) !important;
+  transform-origin: 0 0 !important;
+  pointer-events: none !important;
 }
 
 /* ============================================================
