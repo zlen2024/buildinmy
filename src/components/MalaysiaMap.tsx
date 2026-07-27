@@ -267,23 +267,20 @@ export function MalaysiaMap() {
         return;
       }
 
-      // District shape click — only relevant when drilled into a state
+      // District shape click
       const districtEl = (e.target as Element).closest('path.district') as SVGPathElement | null;
-      if (districtEl && selectedState && drillEventFired) {
-        // krackedmaps district paths have id = `district-${stateSlug}-${districtSlug}`
-        // where districtSlug is slugified (e.g. "kota-bharu"). We need to convert
-        // it back to the display name (e.g. "Kota Bharu") so it matches what
-        // DistrictPanel stores in `selectedDistrict`.
-        const id = districtEl.getAttribute('id') || '';
-        const match = id.match(/^district-[^-]+-(.+)$/);
-        const districtSlug = match?.[1] || districtEl.getAttribute('data-slug') || '';
-        if (districtSlug) {
-          // Look up the display name via STATE_DISTRICTS list for this state
-          const districtsForState = STATE_DISTRICTS[selectedState] || [];
+      if (districtEl) {
+        const key = districtEl.getAttribute('data-key') || districtEl.getAttribute('data-slug') || districtEl.getAttribute('data-name') || '';
+        if (key) {
+          const activeState = selectedState || mapInstanceRef.current?.DISTRICTS?.find((d) => d.slug === key || d.name.toLowerCase() === key.toLowerCase())?.state || null;
+          if (activeState && activeState !== selectedState) {
+            setSelectedState(activeState);
+          }
+          const districtsForState = STATE_DISTRICTS[activeState || ''] || [];
           const displayName = districtsForState.find(
-            (d) => slugifyDistrict(d) === districtSlug,
-          ) || districtSlug;
-          // Toggle: if already selected, deselect; otherwise select
+            (d) => slugifyDistrict(d) === slugifyDistrict(key),
+          ) || key;
+
           setSelectedDistrict(selectedDistrict === displayName ? null : displayName);
         }
       }
@@ -375,13 +372,14 @@ export function MalaysiaMap() {
     // District zoom: find the path and animate viewBox into it.
     // We retry a few times because the district paths may not be in the DOM
     // until krackedmaps' drillInto animation completes.
-    if (!selectedState) return;
+    const activeState = selectedState || mapInstanceRef.current?.DISTRICTS?.find((d) => slugifyDistrict(d.slug) === slugifyDistrict(selectedDistrict) || d.name.toLowerCase() === selectedDistrict.toLowerCase())?.state || '';
+    if (!activeState) return;
     let attempts = 0;
-    const maxAttempts = 12;
+    const maxAttempts = 15;
     const tryZoom = () => {
       const inst = mapInstanceRef.current;
       if (!inst) return;
-      const path = findDistrictPath(inst.svg, selectedState, selectedDistrict);
+      const path = findDistrictPath(inst.svg, activeState, selectedDistrict);
       if (!path) {
         attempts += 1;
         if (attempts < maxAttempts) {

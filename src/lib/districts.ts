@@ -148,31 +148,44 @@ export function findDistrictPath(
   stateSlug: string,
   districtName: string,
 ): SVGPathElement | null {
+  if (!svg || !districtName) return null
   const districtSlug = slugifyDistrict(districtName)
 
-  // Try direct id match — krackedmaps uses `district-${state}-${slug}` scheme
-  const directId = `district-${stateSlug}-${districtSlug}`
-  try {
-    const byId = svg.querySelector(`#${CSS.escape(directId)}`)
-    if (byId) return byId as SVGPathElement
-  } catch {
-    /* CSS.escape may fail on some chars, fall through */
-  }
-
-  // Fallback: scan all .district paths and match by data-slug attribute
+  // 1. Scan all .district paths and match by krackedmaps data-key, data-slug, or data-name
   const allDistricts = svg.querySelectorAll<SVGPathElement>('path.district')
   for (const path of allDistricts) {
-    const dataSlug = path.getAttribute('data-slug')
-    const dataName = path.getAttribute('data-name')
-    if (dataSlug === districtSlug) return path
-    if (dataName === districtName) return path
-    // Check parent <g> for a <text> child matching the name
-    const parent = path.parentElement
-    if (parent) {
-      const text = parent.querySelector('text')
-      if (text?.textContent?.trim() === districtName) return path
+    const key = path.getAttribute('data-key') || path.getAttribute('data-slug') || path.getAttribute('data-name') || ''
+    if (!key) continue
+    const keySlug = slugifyDistrict(key)
+    if (
+      key === districtName ||
+      key === districtSlug ||
+      keySlug === districtSlug ||
+      key.toLowerCase() === districtName.toLowerCase()
+    ) {
+      return path
     }
   }
+
+  // 2. Direct attribute selector fallback
+  try {
+    const byKey = svg.querySelector<SVGPathElement>(
+      `path.district[data-key="${CSS.escape(districtSlug)}"], path.district[data-key="${CSS.escape(districtName)}"]`
+    )
+    if (byKey) return byKey
+  } catch {
+    /* ignore */
+  }
+
+  // 3. Fallback: check direct id match
+  const directId = `district-${stateSlug}-${districtSlug}`
+  try {
+    const byId = svg.querySelector<SVGPathElement>(`#${CSS.escape(directId)}`)
+    if (byId) return byId
+  } catch {
+    /* ignore */
+  }
+
   return null
 }
 
