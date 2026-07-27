@@ -4,7 +4,7 @@ import { useEffect, useCallback, Suspense } from "react";
 import { MalaysiaMap } from "@/components/MalaysiaMap";
 import { SidebarNav } from "@/components/SidebarNav";
 import { TopHeader } from "@/components/TopHeader";
-import { FloatingFilterBar } from "@/components/FloatingFilterBar";
+
 import { VenueDrawer } from "@/components/VenueDrawer";
 import { VenueList } from "@/components/VenueList";
 import { StatsPanel } from "@/components/StatsPanel";
@@ -206,8 +206,7 @@ function HomePage() {
         )}
       </main>
 
-      {/* Floating Filter Bar */}
-      <FloatingFilterBar />
+
 
       {/* AI Chat Assistant */}
       <AIChatAssistant />
