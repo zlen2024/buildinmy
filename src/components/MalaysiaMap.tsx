@@ -18,6 +18,7 @@ import {
   animateViewBox,
   parseViewBox,
   slugifyDistrict,
+  districtCompositeKey,
   STATE_DISTRICTS,
   type ViewBox,
 } from "@/lib/districts";
@@ -100,6 +101,10 @@ export function MalaysiaMap() {
   // Derived from selectedState + drill event flag for more accuracy
   const [drillEventFired, setDrillEventFired] = useState(false);
 
+  // Ref to suppress krackedmaps select events when WE are the ones
+  // calling selectDistrict() programmatically (to prevent feedback loops)
+  const suppressSelectEventRef = useRef(false);
+
   // Initialize map
   useEffect(() => {
     if (!mapRef.current) return;
@@ -111,6 +116,7 @@ export function MalaysiaMap() {
       showDistricts: true,
       interactive: true,
       labels: false,
+      zoom: false,  // We manage all viewBox animations ourselves
     });
 
     mapInstanceRef.current = map;
@@ -127,7 +133,7 @@ export function MalaysiaMap() {
       const parts = vbStr.split(/[\s,]+/).map(Number);
       const w = parts[2];
       if (w && w > 0) {
-        const pinScale = Math.min(1.0, Math.max(0.04, w / 800));
+        const pinScale = Math.min(1.0, Math.max(0.015, w / 800));
         map.svg.style.setProperty("--pin-scale", pinScale.toFixed(4));
       }
     };
@@ -138,12 +144,38 @@ export function MalaysiaMap() {
       updatePinScale();
     }
 
-    // Handle state selection
-    map.on("select", (payload: StateSelectPayload) => {
-      if (payload.slug) {
-        setSelectedState(payload.slug);
+    // Handle state / district selection events from krackedmaps.
+    // Payload formats:
+    //   string "pahang"                → user clicked a state shape
+    //   {state: 'selangor', district: 'gombak'} → district selected (user click or programmatic)
+    //   null                           → deselected
+    map.on("select", (payload: string | StateSelectPayload | null) => {
+      // Skip events we triggered ourselves (via selectDistrict in our effect)
+      if (suppressSelectEventRef.current) return;
+
+      console.log('[MAP EVENT] select payload:', payload, typeof payload);
+      if (typeof payload === "string") {
+        // State shape clicked on map
+        setSelectedState(payload);
+      } else if (payload && typeof payload === "object") {
+        // District selected — payload has {state, district}
+        if (payload.state) {
+          setSelectedState(payload.state as string);
+        }
+        if (payload.district) {
+          // Resolve display name from STATE_DISTRICTS
+          const stSlug = (payload.state as string) || '';
+          const dtSlug = payload.district as string;
+          const districtsForState = STATE_DISTRICTS[stSlug] || [];
+          const displayName = districtsForState.find(
+            (d) => slugifyDistrict(d) === slugifyDistrict(dtSlug)
+          ) || dtSlug;
+          setSelectedDistrict(displayName);
+        }
       } else {
+        // Deselected
         setSelectedState(null);
+        setSelectedDistrict(null);
       }
     });
 
@@ -247,15 +279,14 @@ export function MalaysiaMap() {
     updatePins();
   }, [updatePins]);
 
-  // Pin click + district-shape click handler.
-  // - Clicking a pin (`<g class="pin" data-id="...">`) opens the venue drawer
-  // - Clicking a district shape (`<path class="district">`) when drilled in
-  //   selects that district and zooms into it (the user's requested feature)
+  // Pin click handler.
+  // krackedmaps already handles state + district shape clicks internally
+  // (fires "select" event which our handler above processes).
+  // We only need to handle pin clicks ourselves.
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
 
     const handleClick = (e: MouseEvent) => {
-      // Pin click takes priority
       const pinEl = (e.target as Element).closest('.pin');
       if (pinEl) {
         const venueId = pinEl.getAttribute('data-id');
@@ -264,25 +295,6 @@ export function MalaysiaMap() {
         if (venue) {
           setSelectedVenue(venue);
         }
-        return;
-      }
-
-      // District shape click
-      const districtEl = (e.target as Element).closest('path.district') as SVGPathElement | null;
-      if (districtEl) {
-        const key = districtEl.getAttribute('data-key') || districtEl.getAttribute('data-slug') || districtEl.getAttribute('data-name') || '';
-        if (key) {
-          const activeState = selectedState || mapInstanceRef.current?.DISTRICTS?.find((d) => d.slug === key || d.name.toLowerCase() === key.toLowerCase())?.state || null;
-          if (activeState && activeState !== selectedState) {
-            setSelectedState(activeState);
-          }
-          const districtsForState = STATE_DISTRICTS[activeState || ''] || [];
-          const displayName = districtsForState.find(
-            (d) => slugifyDistrict(d) === slugifyDistrict(key),
-          ) || key;
-
-          setSelectedDistrict(selectedDistrict === displayName ? null : displayName);
-        }
       }
     };
 
@@ -290,7 +302,7 @@ export function MalaysiaMap() {
     return () => {
       mapInstanceRef.current?.root.removeEventListener('click', handleClick);
     };
-  }, [mapReady, venueById, setSelectedVenue, selectedState, selectedDistrict, drillEventFired, setSelectedDistrict]);
+  }, [mapReady, venueById, setSelectedVenue]);
 
   // Derived: are we drilled into a state?
   const isDrilledIn = !!selectedState && drillEventFired;
@@ -311,8 +323,9 @@ export function MalaysiaMap() {
 
     // 1. National View (no state & no district selected)
     if (!selectedState && !selectedDistrict) {
+      console.log('[ZOOM EFFECT] → National view (reset)');
       try {
-        if (typeof map.selectDistrict === "function") map.selectDistrict("");
+        if (typeof map.selectDistrict === "function") map.selectDistrict(null);
         if (typeof map.drillInto === "function") map.drillInto(null);
         map.focus(null);
       } catch {
@@ -326,27 +339,38 @@ export function MalaysiaMap() {
       (d) => slugifyDistrict(d.slug) === slugifyDistrict(selectedDistrict || "") || d.name.toLowerCase() === (selectedDistrict || "").toLowerCase()
     )?.state || null;
 
+    console.log('[ZOOM EFFECT] selectedState:', selectedState, 'selectedDistrict:', selectedDistrict, 'activeState:', activeState);
+
     if (activeState && typeof map.drillInto === "function") {
       try { map.drillInto(activeState); } catch { /* ignore */ }
     }
 
     // 2. State View (state selected, no district selected)
     if (!selectedDistrict) {
+      console.log('[ZOOM EFFECT] → State view, calling map.focus("' + activeState + '")');
       try {
-        if (typeof map.selectDistrict === "function") map.selectDistrict("");
+        if (typeof map.selectDistrict === "function") map.selectDistrict(null);
         if (activeState) map.focus(activeState);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.error('[ZOOM EFFECT] focus error:', err);
       }
       return;
     }
 
     // 3. District View (district selected)
     // Highlight district shape and animate viewBox directly to district bbox
+    // Use suppressSelectEventRef to prevent the select event from re-triggering
+    // our handler when we call selectDistrict programmatically.
+    const compositeKey = districtCompositeKey(activeState, selectedDistrict);
+    console.log('[ZOOM EFFECT] → District view, compositeKey:', compositeKey);
     try {
-      if (typeof map.selectDistrict === "function") map.selectDistrict(selectedDistrict);
+      if (typeof map.selectDistrict === "function") {
+        suppressSelectEventRef.current = true;
+        map.selectDistrict(compositeKey);
+        suppressSelectEventRef.current = false;
+      }
     } catch {
-      /* ignore */
+      suppressSelectEventRef.current = false;
     }
 
     if (!activeState) return;
@@ -358,25 +382,43 @@ export function MalaysiaMap() {
       const inst = mapInstanceRef.current;
       if (!inst || !inst.svg) return;
 
+      console.log('[DISTRICT ZOOM] Attempt', attempts + 1, 'for', selectedDistrict, 'in', activeState);
+      console.log('[DISTRICT ZOOM] Total .district paths in SVG:', inst.svg.querySelectorAll('path.district').length);
+      // Log first few district paths for debugging
+      const allPaths = inst.svg.querySelectorAll<SVGPathElement>('path.district');
+      if (allPaths.length > 0) {
+        const sample = Array.from(allPaths).slice(0, 5).map(p => ({
+          id: p.id, key: p.getAttribute('data-key'), slug: p.getAttribute('data-slug'),
+          state: p.getAttribute('data-state'), show: p.classList.contains('show')
+        }));
+        console.log('[DISTRICT ZOOM] Sample paths:', JSON.stringify(sample));
+      }
+
       const path = findDistrictPath(inst.svg, activeState, selectedDistrict);
+      console.log('[DISTRICT ZOOM] findDistrictPath result:', path ? 'FOUND' : 'NOT FOUND');
       if (!path) {
         attempts += 1;
         if (attempts < maxAttempts) {
           setTimeout(tryZoomToDistrict, 50);
+        } else {
+          console.warn('[DISTRICT ZOOM] Gave up after', maxAttempts, 'attempts');
         }
         return;
       }
 
       try {
         const bbox = path.getBBox();
+        console.log('[DISTRICT ZOOM] bbox:', bbox.x, bbox.y, bbox.width, bbox.height);
         if (bbox.width <= 0 || bbox.height <= 0) return;
         const startVb = parseViewBox(inst.svg);
+        console.log('[DISTRICT ZOOM] startVb:', startVb);
         const aspectRatio = startVb
           ? startVb.w / startVb.h
           : inst.svg.clientWidth / inst.svg.clientHeight;
 
         // Tight crop (6% padding) around the selected district shape
         const target = computeDistrictViewBox(bbox, aspectRatio, 0.06);
+        console.log('[DISTRICT ZOOM] target viewBox:', target);
 
         cancelZoomRef.current = animateViewBox(
           inst.svg,
@@ -384,8 +426,8 @@ export function MalaysiaMap() {
           650,
           (vb) => setCurrentViewBox(vb),
         );
-      } catch {
-        /* getBBox can throw if element is not in layout */
+      } catch (err) {
+        console.error('[DISTRICT ZOOM] Error:', err);
       }
     };
 

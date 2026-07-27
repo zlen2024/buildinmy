@@ -143,6 +143,13 @@ export function slugifyDistrict(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/**
+ * Build the composite key krackedmaps uses internally: "state/slug"
+ */
+export function districtCompositeKey(stateSlug: string, districtName: string): string {
+  return `${slugifyDistrict(stateSlug)}/${slugifyDistrict(districtName)}`
+}
+
 export function findDistrictPath(
   svg: SVGSVGElement,
   stateSlug: string,
@@ -150,40 +157,54 @@ export function findDistrictPath(
 ): SVGPathElement | null {
   if (!svg || !districtName) return null
   const districtSlug = slugifyDistrict(districtName)
+  const compositeKey = districtCompositeKey(stateSlug, districtName)
 
-  // 1. Scan all .district paths and match by krackedmaps data-key, data-slug, or data-name
-  const allDistricts = svg.querySelectorAll<SVGPathElement>('path.district')
-  for (const path of allDistricts) {
-    const key = path.getAttribute('data-key') || path.getAttribute('data-slug') || path.getAttribute('data-name') || ''
-    if (!key) continue
-    const keySlug = slugifyDistrict(key)
-    if (
-      key === districtName ||
-      key === districtSlug ||
-      keySlug === districtSlug ||
-      key.toLowerCase() === districtName.toLowerCase()
-    ) {
-      return path
-    }
-  }
-
-  // 2. Direct attribute selector fallback
-  try {
-    const byKey = svg.querySelector<SVGPathElement>(
-      `path.district[data-key="${CSS.escape(districtSlug)}"], path.district[data-key="${CSS.escape(districtName)}"]`
-    )
-    if (byKey) return byKey
-  } catch {
-    /* ignore */
-  }
-
-  // 3. Fallback: check direct id match
-  const directId = `district-${stateSlug}-${districtSlug}`
+  // 1. Try direct ID selector first (fastest): id="district-{state}-{slug}"
+  const directId = `district-${slugifyDistrict(stateSlug)}-${districtSlug}`
   try {
     const byId = svg.querySelector<SVGPathElement>(`#${CSS.escape(directId)}`)
     if (byId) return byId
   } catch {
     /* ignore */
+  }
+
+  // 2. Try composite key selector: data-key="state/slug"
+  try {
+    const byComposite = svg.querySelector<SVGPathElement>(
+      `path.district[data-key="${CSS.escape(compositeKey)}"]`
+    )
+    if (byComposite) return byComposite
+  } catch {
+    /* ignore */
+  }
+
+  // 3. Try data-slug selector
+  try {
+    const bySlug = svg.querySelector<SVGPathElement>(
+      `path.district[data-slug="${CSS.escape(districtSlug)}"]`
+    )
+    if (bySlug) return bySlug
+  } catch {
+    /* ignore */
+  }
+
+  // 4. Brute-force scan all .district paths
+  const allDistricts = svg.querySelectorAll<SVGPathElement>('path.district')
+  for (const path of allDistricts) {
+    const slug = path.getAttribute('data-slug') || ''
+    const name = path.getAttribute('data-name') || ''
+    const key = path.getAttribute('data-key') || ''
+    // data-key is "state/slug" in krackedmaps — extract the slug portion
+    const keySlugPart = key.includes('/') ? key.split('/').pop() || '' : key
+
+    if (
+      slugifyDistrict(slug) === districtSlug ||
+      slugifyDistrict(name) === districtSlug ||
+      slugifyDistrict(keySlugPart) === districtSlug ||
+      name.toLowerCase() === districtName.toLowerCase()
+    ) {
+      return path
+    }
   }
 
   return null
