@@ -295,99 +295,78 @@ export function MalaysiaMap() {
   // Derived: are we drilled into a state?
   const isDrilledIn = !!selectedState && drillEventFired;
 
-  // Focus + drill into state when selected (district-level zoom)
+  // Unified Map Focus & District Zoom Effect:
+  // Dynamically coordinates National, State, and District zoom levels cleanly.
+  // When a district is selected, map.focus(state) is avoided so krackedmaps's
+  // internal animation loop does not compete with or overwrite the district viewBox crop.
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
-    if (selectedState) {
-      try {
-        map.focus(selectedState);
-        // Drill into the state to reveal district boundaries
-        if (typeof map.drillInto === "function") {
-          map.drillInto(selectedState);
-        }
-      } catch {
-        // Focus might fail for states not in the main map
-      }
-    } else {
-      // Exit district view
-      try {
-        if (typeof map.drillInto === "function") {
-          map.drillInto(null);
-        }
-        map.focus(null);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [selectedState]);
 
-  // Highlight selected district on the map AND zoom into it.
-  // This is the user's "district-level zoom" feature: when a district is
-  // selected (via DistrictPanel click or by clicking a district shape on the
-  // map), we:
-  //   1. Call krackedmaps' `selectDistrict()` to highlight it
-  //   2. Find the district <path> in the SVG and animate the viewBox to a
-  //      tighter crop centred on it — this makes venue pins appear at more
-  //      accurate, spread-out positions.
-  // When the district is deselected (but state still selected), we re-focus
-  // the state to zoom back out.
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-    try {
-      if (selectedDistrict && typeof map.selectDistrict === "function") {
-        map.selectDistrict(selectedDistrict);
-      } else if (typeof map.selectDistrict === "function") {
-        map.selectDistrict("");
-      }
-    } catch {
-      /* ignore */
-    }
-
-    // Cancel any in-flight zoom animation
+    // Cancel any custom in-flight zoom animation
     if (cancelZoomRef.current) {
       cancelZoomRef.current();
       cancelZoomRef.current = null;
     }
 
-    if (!selectedDistrict) {
-      // Zoom back out to state level (re-focus state)
-      if (selectedState) {
-        try {
-          // Slight delay so krackedmaps' own drillInto state settles first
-          const t = setTimeout(() => {
-            if (mapInstanceRef.current && selectedState) {
-              try { mapInstanceRef.current.focus(selectedState); } catch { /* ignore */ }
-            }
-          }, 60);
-          return () => clearTimeout(t);
-        } catch {
-          /* ignore */
-        }
+    // 1. National View (no state & no district selected)
+    if (!selectedState && !selectedDistrict) {
+      try {
+        if (typeof map.selectDistrict === "function") map.selectDistrict("");
+        if (typeof map.drillInto === "function") map.drillInto(null);
+        map.focus(null);
+      } catch {
+        /* ignore */
       }
       return;
     }
 
-    // District zoom: find the path and animate viewBox into it.
-    // We retry a few times because the district paths may not be in the DOM
-    // until krackedmaps' drillInto animation completes.
-    const activeState = selectedState || mapInstanceRef.current?.DISTRICTS?.find((d) => slugifyDistrict(d.slug) === slugifyDistrict(selectedDistrict) || d.name.toLowerCase() === selectedDistrict.toLowerCase())?.state || '';
+    // Resolve state for current district if state slug is missing
+    const activeState = selectedState || map.DISTRICTS?.find(
+      (d) => slugifyDistrict(d.slug) === slugifyDistrict(selectedDistrict || "") || d.name.toLowerCase() === (selectedDistrict || "").toLowerCase()
+    )?.state || null;
+
+    if (activeState && typeof map.drillInto === "function") {
+      try { map.drillInto(activeState); } catch { /* ignore */ }
+    }
+
+    // 2. State View (state selected, no district selected)
+    if (!selectedDistrict) {
+      try {
+        if (typeof map.selectDistrict === "function") map.selectDistrict("");
+        if (activeState) map.focus(activeState);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    // 3. District View (district selected)
+    // Highlight district shape and animate viewBox directly to district bbox
+    try {
+      if (typeof map.selectDistrict === "function") map.selectDistrict(selectedDistrict);
+    } catch {
+      /* ignore */
+    }
+
     if (!activeState) return;
+
     let attempts = 0;
-    const maxAttempts = 15;
-    const tryZoom = () => {
+    const maxAttempts = 20;
+
+    const tryZoomToDistrict = () => {
       const inst = mapInstanceRef.current;
-      if (!inst) return;
+      if (!inst || !inst.svg) return;
+
       const path = findDistrictPath(inst.svg, activeState, selectedDistrict);
       if (!path) {
         attempts += 1;
         if (attempts < maxAttempts) {
-          setTimeout(tryZoom, 80);
+          setTimeout(tryZoomToDistrict, 50);
         }
         return;
       }
-      // Path found — compute bbox and animate
+
       try {
         const bbox = path.getBBox();
         if (bbox.width <= 0 || bbox.height <= 0) return;
@@ -395,21 +374,30 @@ export function MalaysiaMap() {
         const aspectRatio = startVb
           ? startVb.w / startVb.h
           : inst.svg.clientWidth / inst.svg.clientHeight;
-        // Tight padding (8%) for a close-up district view
-        const target = computeDistrictViewBox(bbox, aspectRatio, 0.08);
+
+        // Tight crop (6% padding) around the selected district shape
+        const target = computeDistrictViewBox(bbox, aspectRatio, 0.06);
+
         cancelZoomRef.current = animateViewBox(
           inst.svg,
           target,
-          700,
+          650,
           (vb) => setCurrentViewBox(vb),
         );
       } catch {
-        /* getBBox can throw if not rendered */
+        /* getBBox can throw if element is not in layout */
       }
     };
-    const t = setTimeout(tryZoom, 120); // wait for drillInto animation
-    return () => clearTimeout(t);
-  }, [selectedDistrict, selectedState, isDrilledIn]);
+
+    const timer = setTimeout(tryZoomToDistrict, 40);
+    return () => {
+      clearTimeout(timer);
+      if (cancelZoomRef.current) {
+        cancelZoomRef.current();
+        cancelZoomRef.current = null;
+      }
+    };
+  }, [selectedState, selectedDistrict, mapReady]);
 
   // Street-level zoom: when zoomLevel === 'street', zoom even closer into
   // the district (or state if no district). Toggled via the "Street view"
